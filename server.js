@@ -121,7 +121,13 @@ app.post("/check", async (req, res) => {
 
 // Test the configured webhook
 app.post("/test-webhook", async (req, res) => {
-  const webhook = process.env.DISCORD_WEBHOOK_URL;
+  const suppliedWebhook = req.body?.webhookUrl;
+  const validWebhook = typeof suppliedWebhook === "string" &&
+    /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[A-Za-z0-9._-]+$/.test(suppliedWebhook);
+  if (suppliedWebhook && !validWebhook) {
+    return res.status(400).json({ success: false, error: "Invalid Discord webhook URL" });
+  }
+  const webhook = validWebhook ? suppliedWebhook : process.env.DISCORD_WEBHOOK_URL;
   const ip = req.ip;
   const now = Date.now();
 

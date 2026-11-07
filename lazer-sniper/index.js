@@ -64,7 +64,13 @@ async function checkDiscordUsername(username) {
       body: JSON.stringify({ username }),
       signal: AbortSignal.timeout(10000)
     });
-    if (response.status === 429) return { unknown: true, rateLimited: true };
+    if (response.status === 429) {
+      const limitData = await response.json().catch(() => ({}));
+      const retryAfterMs = Number.isFinite(Number(limitData.retry_after))
+        ? Math.max(1000, Math.ceil(Number(limitData.retry_after) * 1000))
+        : 60000;
+      return { unknown: true, rateLimited: true, retryAfterMs };
+    }
     if (!response.ok) return { unknown: true };
     const data = await response.json();
     if (typeof data.taken !== "boolean") return { unknown: true };

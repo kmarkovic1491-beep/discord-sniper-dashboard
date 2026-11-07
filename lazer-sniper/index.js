@@ -107,7 +107,7 @@ async function checkDiscordUsername(username) {
   }
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || "";
   const pathname = new URL(req.url || "/", "http://localhost").pathname;
   console.log("Request", req.method, pathname);

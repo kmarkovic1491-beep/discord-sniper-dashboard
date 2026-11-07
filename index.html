@@ -1,196 +1,538 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Discord Username Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SHINOBI | 4C Username Hunter</title>
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#100d19;color:#eee;font-family:Arial,sans-serif;padding:20px}
-main{max-width:650px;margin:auto}
-h1{color:#b69aff}
-.panel{background:#1d1829;border:1px solid #382d50;border-radius:14px;padding:18px;margin:14px 0}
-button{border:0;border-radius:9px;padding:12px 18px;font-weight:bold;cursor:pointer;margin:5px}
-.start{background:#8b5cf6;color:white}
-.stop{background:#e05252;color:white}
-.secondary{background:#393047;color:white}
-input{width:100%;padding:12px;border-radius:8px;border:1px solid #55456e;background:#100d19;color:white;margin:8px 0}
-.status{font-weight:bold;color:#facc15}
-.good{color:#4ade80}
-.bad{color:#fb7185}
-li{padding:6px 0;overflow-wrap:anywhere}
-.small{color:#aaa;font-size:13px}
-</style>
-</head>
-<body>
-<main>
-<h1>🎯 Discord Username Dashboard</h1>
-<p class="small">Automatic username checker</p>
 
-<div class="panel">
-  <h3>Checker status</h3>
-  <p id="status" class="status">CONNECTING...</p>
-  <p id="current">Waiting for first check...</p>
-  <button class="start" onclick="startSniping()">START</button>
-  <button class="stop" onclick="stopSniping()">STOP</button>
-</div>
-
-<div class="panel">
-  <h3>Settings</h3>
-  <label>Backend URL</label>
-  <input id="backend" value="https://username-sniper-backend.onrender.com">
-  <p class="small">Checks are limited by the backend to at least 2 seconds apart.</p>
-</div>
-
-<div class="panel">
-  <h3>Available usernames</h3>
-  <ul id="available"></ul>
-</div>
-
-<div class="panel">
-  <h3>Recent checks</h3>
-  <ul id="history"></ul>
-</div>
-
-<div class="panel">
-  <h3>Favourites</h3>
-  <ul id="favourites"></ul>
-</div>
-</main>
-
-<script>
-let running = false;
-let checking = false;
-let favourites = [];
-let historyItems = [];
-let availableItems = [];
-
-const $ = id => document.getElementById(id);
-
-function showStatus(message, color="status") {
-  $("status").textContent = message;
-  $("status").className = color;
+:root{
+  --orange:#ff8b32;
+  --red:#e94b35;
+  --purple:#a78bfa;
+  --panel:rgba(13,12,18,.76);
+  --border:rgba(255,255,255,.13);
 }
 
-function generateUsername() {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const length = Math.random() < 0.5 ? 3 : 4;
-  let name = "";
-  for(let i=0;i<length;i++){
-    name += chars[Math.floor(Math.random()*chars.length)];
+body{
+  margin:0;
+  min-height:100vh;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  background:
+    linear-gradient(90deg,rgba(9,8,15,.83),rgba(9,8,15,.48)),
+    url("naruto-background.jpg") center center/cover fixed;
+  background-color:#100d19;
+}
+
+header{
+  padding:25px 6%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,7,12,.55);
+  backdrop-filter:blur(12px);
+}
+
+.logo{
+  font-size:23px;
+  font-weight:900;
+  letter-spacing:3px;
+  color:var(--orange);
+}
+
+.logo span{color:white}
+
+nav a{
+  color:#ddd;
+  text-decoration:none;
+  margin-left:18px;
+  font-size:13px;
+}
+
+main{
+  max-width:1100px;
+  margin:45px auto;
+  padding:0 18px;
+}
+
+.hero{text-align:center;margin-bottom:30px}
+
+.hero h1{
+  font-size:clamp(32px,7vw,58px);
+  margin:0;
+  text-shadow:0 4px 20px #000;
+}
+
+.hero h1 span{color:var(--orange)}
+
+.hero p{color:#ddd}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:17px;
+  padding:22px;
+  margin-bottom:20px;
+  backdrop-filter:blur(13px);
+  box-shadow:0 12px 40px rgba(0,0,0,.3);
+}
+
+h2{font-size:19px;margin-top:0}
+
+button{
+  border:0;
+  border-radius:9px;
+  padding:12px 17px;
+  margin:5px 3px 5px 0;
+  cursor:pointer;
+  color:white;
+  background:#38313f;
+  font-weight:bold;
+}
+
+button:hover{filter:brightness(1.2)}
+
+.primary{
+  background:linear-gradient(120deg,#ff8b32,#e94b35);
+}
+
+.secondary{background:#51416e}
+
+input,select{
+  width:100%;
+  background:rgba(0,0,0,.55);
+  border:1px solid #61536b;
+  border-radius:9px;
+  padding:13px;
+  color:white;
+  margin:8px 0;
+  font-size:15px;
+}
+
+#username{
+  text-align:center;
+  font-size:clamp(35px,8vw,55px);
+  letter-spacing:9px;
+  font-weight:900;
+  color:#ffad65;
+  padding:20px 0;
+}
+
+.status{
+  color:#ffd166;
+  font-weight:bold;
+  overflow-wrap:anywhere;
+}
+
+.available{color:#4ade80}
+.taken{color:#fb7185}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.stat{
+  background:rgba(0,0,0,.35);
+  border:1px solid var(--border);
+  padding:14px;
+  border-radius:10px;
+  text-align:center;
+}
+
+.stat strong{
+  display:block;
+  font-size:22px;
+  color:var(--orange);
+}
+
+.stat small{color:#bbb}
+
+#output{
+  max-height:280px;
+  overflow:auto;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-family:monospace;
+  color:#ffd0a7;
+  font-size:14px;
+  line-height:1.7;
+}
+
+ul{padding-left:20px}
+li{padding:6px 0;overflow-wrap:anywhere}
+
+.small{font-size:12px;color:#aaa}
+
+footer{
+  text-align:center;
+  padding:25px;
+  color:#aaa;
+  font-size:12px;
+}
+
+@media(max-width:600px){
+  header{padding:18px;display:block}
+  nav{margin-top:14px}
+  nav a{margin:0 12px 0 0}
+  .stats{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">SHINOBI <span>4C</span></div>
+  <nav>
+    <a href="#generator">Generator</a>
+    <a href="#checker">Checker</a>
+    <a href="#saved">Saved</a>
+  </nav>
+</header>
+
+<main>
+
+<section class="hero">
+  <h1>THE <span>4C</span> HUNTER</h1>
+  <p>Find your next rare four-character Discord username.</p>
+</section>
+
+<section class="panel" id="generator">
+  <h2>🍥 Username generator</h2>
+  <div id="username">----</div>
+
+  <button class="primary" onclick="generateOne()">GENERATE 4C</button>
+  <button onclick="copyCurrent()">COPY USERNAME</button>
+  <button onclick="saveCurrent()">♥ SAVE</button>
+
+  <div class="stats">
+    <div class="stat">
+      <strong id="progress">0</strong>
+      <small>Generated</small>
+    </div>
+    <div class="stat">
+      <strong id="savedCount">0</strong>
+      <small>Favourites</small>
+    </div>
+    <div class="stat">
+      <strong>1.68M</strong>
+      <small>Possible combinations</small>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>⚡ Mega generator</h2>
+  <p class="small">Generate candidates locally. This does not send requests to Discord.</p>
+
+  <select id="batchSize">
+    <option value="100">100 candidates</option>
+    <option value="1000" selected>1,000 candidates</option>
+    <option value="5000">5,000 candidates</option>
+    <option value="10000">10,000 candidates</option>
+  </select>
+
+  <button class="primary" onclick="generateBatch()">GENERATE BATCH</button>
+  <button onclick="exportBatch()">EXPORT BATCH</button>
+  <button onclick="exportAll()">EXPORT ALL 4C</button>
+
+  <p id="generatorStatus" class="status">Ready.</p>
+  <div id="output">Your generated usernames will appear here.</div>
+</section>
+
+<section class="panel" id="checker">
+  <h2>🎯 Availability checker</h2>
+  <input id="checkName" maxlength="4" placeholder="Enter exactly 4 characters">
+
+  <button class="primary" onclick="checkAvailability()">CHECK AVAILABILITY</button>
+
+  <p id="checkStatus" class="status">Waiting for a username.</p>
+  <p class="small">Checks one username per button press. Discord may temporarily rate-limit checks.</p>
+</section>
+
+<section class="panel" id="saved">
+  <h2>❤️ Favourites</h2>
+  <ul id="favourites">
+    <li class="small">No saved usernames yet.</li>
+  </ul>
+  <button onclick="exportFavourites()">EXPORT FAVOURITES</button>
+</section>
+
+<section class="panel">
+  <h2>📜 Recent checks</h2>
+  <ul id="history">
+    <li class="small">No checks yet.</li>
+  </ul>
+</section>
+
+<section class="panel">
+  <h2>⚙️ Backend connection</h2>
+  <p id="connectionStatus" class="status">Checking connection...</p>
+  <button onclick="testBackend()">TEST CONNECTION</button>
+  <p class="small">Webhook URL stays private on the backend. Never put it in this page.</p>
+</section>
+
+</main>
+
+<footer>
+  SHINOBI 4C · Fan-made username discovery dashboard
+</footer>
+
+<script>
+const BACKEND="https://username-sniper-backend.onrender.com";
+const CHARS="abcdefghijklmnopqrstuvwxyz0123456789";
+const TOTAL=36**4;
+
+let currentName="";
+let cursor=0;
+let multiplier=5;
+let offset=Math.floor(Math.random()*TOTAL);
+let displayed=[];
+let favourites=[];
+let historyItems=[];
+let checking=false;
+
+const $=id=>document.getElementById(id);
+
+function randomName(){
+  let name="";
+  for(let i=0;i<4;i++){
+    name+=CHARS[Math.floor(Math.random()*CHARS.length)];
   }
   return name;
 }
 
-function addHistory(name, result) {
-  historyItems.unshift(name + " — " + result);
-  historyItems = historyItems.slice(0,20);
-  $("history").innerHTML = historyItems.map(x=>"<li>"+x+"</li>").join("");
+function generateOne(){
+  currentName=randomName();
+  $("username").textContent=currentName;
+  $("checkName").value=currentName;
 }
 
-function addAvailable(name) {
-  if(!availableItems.includes(name)){
-    availableItems.unshift(name);
-    $("available").innerHTML = availableItems.map(x=>"<li>"+x+
-      ' <button class="secondary" onclick="addFavourite(\''+x+'\')">♥ Save</button></li>'
-    ).join("");
+function candidate(index){
+  let n=(multiplier*index+offset)%TOTAL;
+  let name="";
+  for(let i=0;i<4;i++){
+    name=CHARS[n%36]+name;
+    n=Math.floor(n/36);
+  }
+  return name;
+}
+
+function generateBatch(){
+  if(cursor>=TOTAL){
+    $("generatorStatus").textContent="All combinations generated!";
+    return;
+  }
+
+  const amount=Number($("batchSize").value);
+  const end=Math.min(cursor+amount,TOTAL);
+  displayed=[];
+
+  for(;cursor<end;cursor++){
+    displayed.push(candidate(cursor));
+  }
+
+  $("output").textContent=displayed.join("\n");
+  $("generatorStatus").textContent=
+    "Generated "+cursor.toLocaleString()+" of "+TOTAL.toLocaleString();
+  $("progress").textContent=cursor.toLocaleString();
+}
+
+async function copyCurrent(){
+  if(!currentName)return;
+  try{
+    await navigator.clipboard.writeText(currentName);
+    $("checkStatus").textContent="Copied "+currentName;
+  }catch(e){
+    $("checkStatus").textContent="Clipboard unavailable.";
   }
 }
 
-function addFavourite(name) {
-  if(!favourites.includes(name)){
-    favourites.push(name);
-    $("favourites").innerHTML = favourites.map(x=>"<li>"+x+"</li>").join("");
+function saveCurrent(){
+  if(!currentName)return;
+  if(favourites.includes(currentName))return;
+  favourites.push(currentName);
+  renderFavourites();
+}
+
+function renderFavourites(){
+  $("savedCount").textContent=favourites.length;
+  const list=$("favourites");
+  list.replaceChildren();
+
+  favourites.forEach(name=>{
+    const li=document.createElement("li");
+    li.textContent=name+" ";
+
+    const copy=document.createElement("button");
+    copy.textContent="COPY";
+    copy.onclick=()=>navigator.clipboard.writeText(name);
+
+    li.appendChild(copy);
+    list.appendChild(li);
+  });
+
+  if(!favourites.length){
+    const li=document.createElement("li");
+    li.textContent="No saved usernames yet.";
+    list.appendChild(li);
   }
 }
 
-async function checkOne() {
-  if(checking) return;
-  checking = true;
+function addHistory(name,result){
+  historyItems.unshift(name+" — "+result);
+  historyItems=historyItems.slice(0,20);
 
-  const name = generateUsername();
-  $("current").textContent = "Checking: " + name;
+  const list=$("history");
+  list.replaceChildren();
 
-  try {
-    const base = $("backend").value.trim().replace(/\/$/,"");
-    const response = await fetch(base + "/check", {
+  historyItems.forEach(item=>{
+    const li=document.createElement("li");
+    li.textContent=item;
+    list.appendChild(li);
+  });
+}
+
+function downloadFile(content,filename){
+  const blob=new Blob([content],{type:"text/plain"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+async function exportBatch(){
+  if(!displayed.length)return;
+  downloadFile(displayed.join("\n"),"shinobi-4c-batch.txt");
+}
+
+function exportFavourites(){
+  if(!favourites.length)return;
+  downloadFile(favourites.join("\n"),"4c-favourites.txt");
+}
+
+function exportAll(){
+  $("generatorStatus").textContent="Preparing all combinations...";
+  const chunks=[];
+  let lines=[];
+
+  for(let i=0;i<TOTAL;i++){
+    lines.push(candidate(i));
+    if(lines.length===10000){
+      chunks.push(lines.join("\n")+"\n");
+      lines=[];
+    }
+  }
+
+  if(lines.length)chunks.push(lines.join("\n"));
+  downloadFile(chunks.join(""),"all-4c-candidates.txt");
+  $("generatorStatus").textContent="Full collection exported!";
+}
+
+async function checkAvailability(){
+  if(checking)return;
+
+  const name=$("checkName").value.trim().toLowerCase();
+
+  if(!/^[a-z0-9_.]{4}$/.test(name)){
+    $("checkStatus").textContent="Enter exactly 4 valid characters.";
+    $("checkStatus").className="status taken";
+    return;
+  }
+
+  checking=true;
+  $("checkStatus").textContent="Checking "+name+"...";
+  $("checkStatus").className="status";
+
+  try{
+    const response=await fetch(BACKEND+"/check",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({username:name})
     });
 
-    const data = await response.json();
+    const data=await response.json();
 
-    if(response.status === 429 || data.status === "RATE_LIMITED"){
+    if(response.status===429||data.status==="RATE_LIMITED"){
+      $("checkStatus").textContent="RATE LIMITED — try again later.";
+      $("checkStatus").className="status taken";
       addHistory(name,"RATE LIMITED");
-      showStatus("RATE LIMITED — STOPPED","bad");
-      running = false;
       return;
     }
 
     if(!response.ok){
-      throw new Error(data.error || "Request failed");
+      throw new Error(data.error||"Check failed");
     }
 
-    if(data.status === "AVAILABLE"){
+    if(data.status==="AVAILABLE"){
+      $("checkStatus").textContent=name+" appears AVAILABLE!";
+      $("checkStatus").className="status available";
       addHistory(name,"AVAILABLE");
-      addAvailable(name);
-      $("current").textContent = name + " appears available!";
-    } else if(data.status === "TAKEN"){
+
+      // Ask the backend to send the configured webhook notification.
+      try{
+        const alertResponse=await fetch(BACKEND+"/notify",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({username:name})
+        });
+        if(alertResponse.ok){
+          $("checkStatus").textContent=name+" AVAILABLE — notification sent!";
+        }else{
+          $("checkStatus").textContent=name+" AVAILABLE — notification failed.";
+        }
+      }catch(e){
+        $("checkStatus").textContent=name+" AVAILABLE — notification failed.";
+      }
+
+    }else if(data.status==="TAKEN"){
+      $("checkStatus").textContent=name+" is TAKEN.";
+      $("checkStatus").className="status taken";
       addHistory(name,"TAKEN");
-    } else {
-      addHistory(name,data.status || "UNKNOWN");
+    }else{
+      $("checkStatus").textContent="UNKNOWN — no reliable result.";
+      addHistory(name,"UNKNOWN");
     }
 
-  } catch(error) {
-    showStatus("ERROR: " + error.message,"bad");
-    running = false;
-  } finally {
-    checking = false;
+  }catch(error){
+    $("checkStatus").textContent="Connection error: "+error.message;
+    $("checkStatus").className="status taken";
+    addHistory(name,"ERROR");
+  }finally{
+    checking=false;
   }
 }
 
-async function startSniping() {
-  if(running) return;
+async function testBackend(){
+  $("connectionStatus").textContent="Connecting...";
+  try{
+    const response=await fetch(BACKEND+"/");
+    const data=await response.json();
 
-  running = true;
-  showStatus("RUNNING","good");
-
-  while(running){
-    await checkOne();
-    if(running){
-      await new Promise(resolve=>setTimeout(resolve,2000));
+    if(response.ok&&data.status==="online"){
+      $("connectionStatus").textContent=
+        "BACKEND ONLINE · Webhook "+(data.webhookConfigured?"configured":"not configured");
+      $("connectionStatus").className="status available";
+    }else{
+      throw new Error("Backend not ready");
     }
+  }catch(e){
+    $("connectionStatus").textContent="BACKEND CONNECTION FAILED";
+    $("connectionStatus").className="status taken";
   }
 }
 
-function stopSniping() {
-  running = false;
-  showStatus("STOPPED");
-  $("current").textContent = "Checker stopped.";
-}
-
-async function connectBackend() {
-  try {
-    const base = $("backend").value.trim().replace(/\/$/,"");
-    const response = await fetch(base + "/");
-    if(!response.ok) throw new Error("Backend unavailable");
-    const data = await response.json();
-
-    if(data.status === "online"){
-      showStatus("CONNECTED","good");
-      startSniping();
-    } else {
-      showStatus("BACKEND NOT READY","bad");
-    }
-  } catch(error) {
-    showStatus("CONNECTION ERROR — " + error.message,"bad");
-  }
-}
-
-window.addEventListener("load", connectBackend);
+generateOne();
+testBackend();
 </script>
 </body>
 </html>

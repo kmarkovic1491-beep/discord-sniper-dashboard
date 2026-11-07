@@ -1,377 +1,110 @@
-
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SHINOBI | 4C Username Hunter</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b13">
+<title>SHINOBI | Username Lab</title>
 <style>
-:root {
-  --orange: #ff762e;
-  --panel: rgba(10, 12, 20, .78);
-  --line: rgba(255,255,255,.15);
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  min-height: 100vh;
-  color: white;
-  font-family: Arial, sans-serif;
-  background:
-    linear-gradient(90deg, rgba(5,7,13,.86), rgba(5,7,13,.48)),
-    url("naruto-background.jpg") center center / cover fixed,
-    #090b13;
-}
-header {
-  padding: 24px 18px;
-  text-align: center;
-  border-bottom: 1px solid var(--line);
-  background: rgba(0,0,0,.35);
-}
-h1 {
-  margin: 0;
-  font-size: clamp(30px, 7vw, 52px);
-  letter-spacing: 5px;
-  color: var(--orange);
-  text-shadow: 0 0 22px rgba(255,100,30,.4);
-}
-header p { color: #ddd; margin-bottom: 0; }
-main {
-  width: min(950px, 94%);
-  margin: 24px auto 50px;
-}
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 17px;
-  padding: 20px;
-  margin-bottom: 17px;
-  backdrop-filter: blur(9px);
-  box-shadow: 0 10px 35px rgba(0,0,0,.28);
-}
-h2 { margin-top: 0; color: var(--orange); }
-button, input {
-  border-radius: 9px;
-  padding: 12px 14px;
-  font-size: 15px;
-}
-button {
-  border: 0;
-  background: var(--orange);
-  color: #160d08;
-  font-weight: bold;
-  cursor: pointer;
-  margin: 4px 3px 4px 0;
-}
-button.secondary {
-  background: #303747;
-  color: white;
-  border: 1px solid var(--line);
-}
-button:disabled { opacity: .5; cursor: wait; }
-input {
-  background: rgba(0,0,0,.45);
-  color: white;
-  border: 1px solid #596071;
-  width: 100%;
-  margin: 6px 0 10px;
-}
-.small { color: #b8becb; font-size: 13px; line-height: 1.5; }
-.big {
-  font-size: 35px;
-  font-weight: bold;
-  letter-spacing: 5px;
-  color: #fff;
-  padding: 12px 0;
-  overflow-wrap: anywhere;
-}
-.status { color: #ffc18f; min-height: 22px; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.row button { flex: 1 1 130px; }
-.stat {
-  display: inline-block;
-  background: rgba(255,255,255,.08);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 9px 12px;
-  margin: 3px;
-}
-#settings { display: none; }
-#settings.open { display: block; }
-.list {
-  max-height: 180px;
-  overflow: auto;
-  overflow-wrap: anywhere;
-  color: #ddd;
-  font-size: 14px;
-  line-height: 1.9;
-}
-footer { text-align: center; color: #aaa; padding: 20px; font-size: 12px; }
-
-nav.dashboard-link{text-align:center;padding:10px 12px;background:#171b28;border-bottom:1px solid rgba(255,255,255,.15)}
-nav.dashboard-link a{display:inline-block;color:#fff;text-decoration:none;background:#303747;border:1px solid rgba(255,255,255,.15);padding:10px 14px;border-radius:9px;font-weight:bold}
+:root{--bg:#090b13;--panel:#111522;--panel2:#171d2c;--line:#283044;--text:#f5f7fb;--muted:#929db2;--accent:#ff762e;--good:#43d49b;--bad:#ff647c;--warn:#ffc36c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:1px solid transparent;border-radius:10px;padding:10px 14px;background:var(--accent);color:#1b100a;font-weight:750}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:var(--panel2);border-color:var(--line);color:var(--text)}.danger{background:#351c27;color:#ff9aab;border-color:#633040}.shell{min-height:100vh;display:grid;grid-template-columns:230px 1fr}.side{position:sticky;top:0;height:100vh;padding:22px 14px;background:#0d111c;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:22px}.brand{display:flex;align-items:center;gap:10px;padding:0 9px}.logo{width:34px;height:34px;border-radius:11px;background:var(--accent);display:grid;place-items:center;color:#1a0d06;font-weight:950}.brand strong{letter-spacing:2px;font-size:16px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:1.4px;margin-top:2px}.navlabel{color:#68738a;font-size:10px;font-weight:800;letter-spacing:1.5px;padding:0 10px;margin-bottom:-12px}.nav{display:grid;gap:5px}.nav button{background:transparent;color:#aab4c7;border:1px solid transparent;text-align:left;font-weight:650;padding:11px 12px}.nav button.active,.nav button:hover{background:#1a2030;border-color:#30394d;color:#fff}.nav button span{display:inline-block;width:24px}.sidefoot{margin-top:auto;background:#141a28;border:1px solid var(--line);border-radius:12px;padding:12px}.sidefoot small{color:var(--muted)}.sidefoot strong{display:block;margin-top:5px}.main{min-width:0}.top{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:#0d111bd9;position:sticky;top:0;z-index:4;backdrop-filter:blur(12px)}.crumb{color:var(--muted)}.topright{display:flex;gap:9px;align-items:center}.pill{border:1px solid var(--line);background:#151b29;border-radius:999px;padding:7px 10px;color:var(--muted);font-size:12px}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:6px}.content{max-width:1250px;margin:0 auto;padding:28px}.page{display:none}.page.active{display:block}.heading{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin-bottom:22px}.heading h1{font-size:27px;margin:0 0 6px;letter-spacing:-.6px}.heading p{color:var(--muted);margin:0}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px;min-width:0}.metric small{color:var(--muted);font-size:11px;letter-spacing:1px;font-weight:750}.metric strong{display:block;font-size:27px;margin-top:10px;overflow-wrap:anywhere}.metric em{display:block;color:var(--muted);font-style:normal;font-size:12px;margin-top:5px}.sectiontitle{font-size:15px;margin:0 0 13px}.split{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-top:14px}.hero{background:radial-gradient(ellipse at 80% 0%,#422518 0,transparent 45%),linear-gradient(135deg,#171d2d,#111522);border:1px solid #383044;border-radius:17px;padding:23px;margin-bottom:14px}.hero h2{font-size:22px;margin:0 0 7px}.hero p{color:#aeb8cb;margin:0;line-height:1.6}.hero .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.muted{color:var(--muted);line-height:1.6}.field{display:grid;gap:7px;margin:12px 0}.field label{color:#aeb8c8;font-size:12px;font-weight:700}.field input,.field select{width:100%;background:#0b101b;border:1px solid #343e54;border-radius:10px;padding:12px;color:#fff;outline:none}.field input:focus,.field select:focus{border-color:var(--accent)}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:0 0 auto}.row .grow{flex:1 1 170px}.candidate{font-size:clamp(38px,8vw,64px);font-weight:900;letter-spacing:8px;text-align:center;padding:24px 10px;color:#fff}.candidatebox{background:#0c111c;border:1px solid var(--line);border-radius:13px;margin:14px 0}.statline{display:flex;gap:8px;flex-wrap:wrap}.statline span{background:#1a2030;border:1px solid var(--line);padding:7px 10px;border-radius:8px;color:#b7c0d0;font-size:12px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:460px}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:11px;letter-spacing:.8px}td code{font-size:14px;letter-spacing:1px;color:#fff}.tag{border-radius:999px;padding:4px 8px;font-size:11px;background:#222b3d;color:#c6d0e1}.tag.good{background:#12362e;color:#7be0b7}.tag.bad{background:#3a2029;color:#ff9aaa}.empty{padding:25px;text-align:center;color:var(--muted)}.list{display:grid;gap:8px}.listitem{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;background:#0d121e;border:1px solid var(--line);border-radius:10px}.listitem strong{letter-spacing:1.5px}.listitem small{display:block;color:var(--muted);margin-top:3px}.listitem .row{flex-wrap:nowrap}.notice{border:1px solid #59452c;background:#2a2117;color:#ffd39a;padding:12px 14px;border-radius:11px;line-height:1.55;margin:12px 0}.notice.good{border-color:#245543;background:#11271f;color:#9ae7c4}.switchrow{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 0;border-bottom:1px solid var(--line)}.switchrow input{accent-color:var(--accent);width:18px;height:18px}.mobilebrand{display:none}.toast{position:fixed;bottom:20px;right:20px;background:#202a3a;border:1px solid #46536b;border-radius:10px;padding:12px 16px;z-index:10;display:none;max-width:calc(100vw - 40px)}body.light{--bg:#eef1f6;--panel:#fff;--panel2:#edf0f6;--line:#d8deea;--text:#182033;--muted:#647087}body.light .side{background:#f8f9fc}body.light .top{background:#ffffffeb}body.light .sidefoot,body.light .field input,body.light .field select,body.light .candidatebox,body.light .listitem{background:#f2f4f8;color:#182033}body.light .hero{background:linear-gradient(135deg,#fff0e8,#f1f3f8)}body.light .hero p{color:#59647a}body.light .candidate{color:#182033}body.light .nav button{color:#46516a}
+@media(max-width:850px){.shell{grid-template-columns:1fr}.side{position:fixed;z-index:8;top:auto;bottom:0;left:0;right:0;width:100%;height:auto;padding:7px 6px calc(7px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line);display:block;background:#0d111cf5}.brand,.navlabel,.sidefoot{display:none}.nav{display:flex;justify-content:space-around;gap:2px}.nav button{font-size:10px;text-align:center;padding:8px 4px;flex:1;min-width:0}.nav button span{display:block;width:auto;font-size:17px;margin-bottom:3px}.top{height:56px;padding:0 14px}.content{padding:19px 13px 95px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}.heading h1{font-size:23px}.heading{align-items:flex-start;flex-direction:column}.pill{font-size:10px}.hero{padding:18px}}@media(max-width:390px){.nav button{font-size:9px}.grid{gap:8px}.card{padding:13px}.metric strong{font-size:22px}}
 </style>
 </head>
 <body>
-<header>
-  <h1>SHINOBI</h1>
-  <p>4C USERNAME HUNTER · FIND YOUR NEXT NAME</p>
-</header>
-<nav class="dashboard-link"><a href="./dashboard.html">📊 Open Control Dashboard</a></nav>
-
-<main>
-  <section class="panel">
-    <h2>🍥 Shinobi Dashboard</h2>
-    <div class="row">
-      <span class="stat" id="backendStatus">Backend: checking...</span>
-      <span class="stat">4-character names only</span>
-    </div>
-    <button class="secondary" onclick="toggleSettings()">⚙️ Settings</button>
+<div class="shell">
+<aside class="side">
+ <div class="brand"><div class="logo">S</div><div><strong>SHINOBI</strong><small>USERNAME LAB</small></div></div>
+ <div class="navlabel">WORKSPACE</div>
+ <nav class="nav">
+  <button class="active" data-page="overview"><span>▦</span>Overview</button>
+  <button data-page="checker"><span>⌕</span>Checker</button>
+  <button data-page="lists"><span>☷</span>My Lists</button>
+  <button data-page="results"><span>◈</span>Results</button>
+  <button data-page="settings"><span>⚙</span>Settings</button>
+ </nav>
+ <div class="sidefoot"><small>CHECKER SERVICE</small><strong id="sideStatus">Connecting…</strong></div>
+</aside>
+<div class="main">
+ <header class="top"><div class="crumb">Workspace / <strong id="crumb">Overview</strong></div><div class="topright"><span class="pill"><i class="dot" id="statusDot"></i><span id="topStatus">Checking service</span></span></div></header>
+ <main class="content">
+  <section class="page active" id="page-overview">
+   <div class="heading"><div><h1>Overview</h1><p>Your username hunting workspace.</p></div><button onclick="navigate('checker')">＋ New search</button></div>
+   <div class="hero"><h2>Find your next rare username.</h2><p>Generate four-character combinations using letters and numbers, organise candidates into lists, and keep track of manual verification results.</p><div class="actions"><button onclick="generateOne();navigate('checker')">Generate username</button><button class="secondary" onclick="navigate('lists')">Open my lists</button></div></div>
+   <div class="grid">
+    <div class="card metric"><small>GENERATED CANDIDATES</small><strong id="mGenerated">0</strong><em>Created on this device</em></div>
+    <div class="card metric"><small>SAVED FAVOURITES</small><strong id="mSaved">0</strong><em>Your shortlist</em></div>
+    <div class="card metric"><small>MANUAL CHECKS</small><strong id="mChecks">0</strong><em>Recorded results</em></div>
+    <div class="card metric"><small>CHECKER SERVICE</small><strong id="mBackend">…</strong><em id="mBackendSub">Connecting to Render</em></div>
+   </div>
+   <div class="split">
+    <div class="card"><h3 class="sectiontitle">Recent activity</h3><div id="recentActivity" class="empty">Nothing here yet. Generate a few names to get started.</div></div>
+    <div class="card"><h3 class="sectiontitle">Quick generator</h3><div class="candidatebox"><div class="candidate" id="quickCandidate">----</div></div><div class="row"><button onclick="generateOne()">Generate</button><button class="secondary" onclick="saveCurrent()">☆ Save</button><button class="secondary" onclick="copyCurrent()">Copy</button></div><p class="muted">36 possible characters per position · 1,679,616 total combinations.</p></div>
+   </div>
   </section>
-
-  <section class="panel" id="settings">
-    <h2>⚙️ Settings</h2>
-    <p>Webhook connection is configured securely on your Render server.</p>
-    <p class="small">Your private webhook URL should stay in Render's environment variables. Never paste it into this public website.</p>
-    <div class="row">
-      <button id="testWebhookBtn" onclick="testWebhook()">📨 Test Webhook</button>
-      <button class="secondary" onclick="checkBackend()">Check Backend</button>
-    </div>
-    <p id="webhookStatus" class="status">Webhook test has not been run.</p>
-    <p class="small">A successful test sends: “🍥 SHINOBI TEST — Webhook connection successful!”</p>
+  <section class="page" id="page-checker">
+   <div class="heading"><div><h1>Username checker</h1><p>Generate candidates locally or manually verify one username.</p></div><span class="pill">4 characters · a–z + 0–9</span></div>
+   <div class="split">
+    <div class="card"><h3 class="sectiontitle">Random username generator</h3><div class="candidatebox"><div class="candidate" id="mainCandidate">----</div></div><div class="row"><button onclick="generateOne()">Generate new</button><button class="secondary" onclick="copyCurrent()">Copy</button><button class="secondary" onclick="saveCurrent()">☆ Favourite</button></div><p id="genMessage" class="muted">Your candidate is generated locally. No Discord request is made.</p></div>
+    <div class="card"><h3 class="sectiontitle">Manual Discord check</h3><div class="field"><label for="checkInput">USERNAME</label><input id="checkInput" maxlength="4" autocomplete="off" placeholder="e.g. a7k2"></div><div class="row"><button id="checkButton" onclick="manualCheck()">Check once</button><button class="secondary" onclick="fillCandidate()">Use generated</button></div><div id="checkMessage" class="notice">Checks may be blocked by Discord's rate limits. A blocked request is recorded as UNKNOWN, never as available.</div><p class="muted">No bulk Discord requests, account tokens, proxy rotation, or automatic claiming.</p></div>
+   </div>
+   <div class="card" style="margin-top:14px"><h3 class="sectiontitle">Generate a local candidate batch</h3><p class="muted">This only creates random names in your browser. It does not check them on Discord.</p><div class="row"><div class="field grow"><label for="batchSize">HOW MANY CANDIDATES?</label><select id="batchSize"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="250">250</option><option value="500">500</option></select></div><button onclick="generateBatch()">Generate batch</button></div><div id="batchMessage" class="muted">No batch generated yet.</div></div>
   </section>
-
-  <section class="panel">
-    <h2>🎲 Random Username Generator</h2>
-    <div class="big" id="candidate">----</div>
-    <div class="row">
-      <button onclick="generateName()">Generate Username</button>
-      <button class="secondary" onclick="copyName()">Copy</button>
-      <button class="secondary" onclick="saveFavorite()">☆ Favourite</button>
-    </div>
-    <p id="generateStatus" class="status"></p>
+  <section class="page" id="page-lists">
+   <div class="heading"><div><h1>My Lists</h1><p>Keep and organise username candidates on this device.</p></div><div class="row"><button class="secondary" onclick="exportNames()">Export .txt</button><button onclick="generateBatch()">＋ Generate batch</button></div></div>
+   <div class="card"><div class="row" style="justify-content:space-between"><h3 class="sectiontitle">Saved favourites</h3><span class="tag" id="favBadge">0 saved</span></div><div id="favoriteList" class="list"><div class="empty">No saved usernames yet.</div></div></div>
+   <div class="card" style="margin-top:14px"><h3 class="sectiontitle">Import a list</h3><p class="muted">Paste one username per line. Invalid entries and duplicates are skipped.</p><div class="field"><textarea id="importText" rows="4" style="width:100%;background:#0b101b;color:white;border:1px solid #343e54;border-radius:10px;padding:12px" placeholder="a7k2&#10;9xq4"></textarea></div><div class="row"><button onclick="importNames()">Import names</button><button class="secondary" onclick="document.getElementById('importText').value=''">Clear</button></div><p id="importMessage" class="muted"></p></div>
   </section>
-
-  <section class="panel">
-    <h2>🔎 Manual Availability Check</h2>
-    <p class="small">Checks one username at a time. Discord may rate-limit or reject checks. Results are not a guarantee that a name can be claimed.</p>
-    <input id="usernameInput" maxlength="4" placeholder="Enter a 4-character username">
-    <button id="checkBtn" onclick="checkUsername()">Check Availability</button>
-    <p id="checkStatus" class="status">Ready to check.</p>
-    <button class="secondary" onclick="useGenerated()">Use generated name</button>
+  <section class="page" id="page-results">
+   <div class="heading"><div><h1>Results</h1><p>Your local history of manual checks. Not a live feed.</p></div><button class="secondary" onclick="exportHistory()">Export history</button></div>
+   <div class="notice">Important: "UNKNOWN" means Discord or the server did not confirm the result. Only a direct, successful response is recorded as TAKEN or APPEARS AVAILABLE. Always confirm availability in Discord before relying on it.</div>
+   <div class="card"><div class="row" style="justify-content:space-between"><h3 class="sectiontitle">Check history</h3><button class="danger" onclick="clearHistory()">Clear history</button></div><div class="tablewrap"><table><thead><tr><th>USERNAME</th><th>RESULT</th><th>WHEN</th></tr></thead><tbody id="historyRows"><tr><td colspan="3" class="empty">No checks recorded yet.</td></tr></tbody></table></div></div>
   </section>
-
-  <section class="panel">
-    <h2>⭐ Favourites</h2>
-    <div id="favorites" class="list">No favourites yet.</div>
-    <button class="secondary" onclick="exportFavorites()">Export Favourites</button>
+  <section class="page" id="page-settings">
+   <div class="heading"><div><h1>Settings</h1><p>Configure the local workspace and webhook test.</p></div></div>
+   <div class="card"><h3 class="sectiontitle">Appearance</h3><div class="switchrow"><div><strong>Light theme</strong><div class="muted">Switch between dark and light appearance.</div></div><input id="lightToggle" type="checkbox" onchange="setTheme(this.checked)"></div><div class="switchrow"><div><strong>Sound effects</strong><div class="muted">Reserved for a future update.</div></div><input type="checkbox" disabled></div></div>
+   <div class="card" style="margin-top:14px"><h3 class="sectiontitle">Discord webhook</h3><p class="muted">The webhook URL stays private in your Render environment variables. It is never shown in this dashboard.</p><div class="row"><button id="webhookButton" onclick="testWebhook()">Send test message</button><button class="secondary" onclick="checkBackend()">Refresh backend status</button></div><div id="webhookMessage" class="notice">Webhook has not been tested in this session.</div></div>
+   <div class="card" style="margin-top:14px"><h3 class="sectiontitle">Data and privacy</h3><p class="muted">Favourites, generated candidates, and history are stored in this browser's local storage. They do not sync between devices.</p><div class="row"><button class="secondary" onclick="exportAll()">Export all local data</button><button class="danger" onclick="clearLocalData()">Clear all local data</button></div></div>
+   <div class="card" style="margin-top:14px"><h3 class="sectiontitle">Service information</h3><p id="serviceInfo" class="muted">Checking backend…</p><p class="muted">A healthy backend does not mean Discord's username endpoint is accepting checks. Respect upstream cooldowns.</p></div>
   </section>
-
-  <section class="panel">
-    <h2>📜 Recent Checks</h2>
-    <div id="history" class="list">No checks yet.</div>
-  </section>
-</main>
-
-<footer>SHINOBI DASHBOARD · Use manual checks responsibly</footer>
-
+ </main>
+</div>
+</div>
+<div class="toast" id="toast"></div>
 <script>
-const API = "https://username-sniper-backend.onrender.com";
-const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-let currentName = "----";
-let checkCooldownUntil = 0;
-let cooldownInterval = null;
-let favorites = JSON.parse(localStorage.getItem("shinobiFavorites") || "[]");
-let history = JSON.parse(localStorage.getItem("shinobiHistory") || "[]");
-
-function toggleSettings() {
-  document.getElementById("settings").classList.toggle("open");
-}
-
-function generateName() {
-  let name = "";
-  for (let i = 0; i < 4; i++) {
-    name += chars[Math.floor(Math.random() * chars.length)];
-  }
-  currentName = name;
-  document.getElementById("candidate").textContent = name;
-  document.getElementById("generateStatus").textContent = "New username generated.";
-}
-
-function useGenerated() {
-  document.getElementById("usernameInput").value = currentName;
-}
-
-async function copyName() {
-  try {
-    await navigator.clipboard.writeText(currentName);
-    document.getElementById("generateStatus").textContent = "Copied " + currentName + "!";
-  } catch {
-    document.getElementById("generateStatus").textContent = "Copy unavailable in this browser.";
-  }
-}
-
-function saveFavorite() {
-  if (currentName === "----") return;
-  if (!favorites.includes(currentName)) favorites.unshift(currentName);
-  localStorage.setItem("shinobiFavorites", JSON.stringify(favorites));
-  renderFavorites();
-  document.getElementById("generateStatus").textContent = currentName + " saved to favourites.";
-}
-
-function renderFavorites() {
-  const el = document.getElementById("favorites");
-  el.textContent = favorites.length ? favorites.join(" · ") : "No favourites yet.";
-}
-
-function renderHistory() {
-  const el = document.getElementById("history");
-  el.textContent = history.length
-    ? history.map(x => x.name + " — " + x.status).join(" | ")
-    : "No checks yet.";
-}
-
-function addHistory(name, status) {
-  history.unshift({name, status});
-  history = history.slice(0, 30);
-  localStorage.setItem("shinobiHistory", JSON.stringify(history));
-  renderHistory();
-}
-
-async function checkBackend() {
-  const el = document.getElementById("backendStatus");
-  el.textContent = "Backend: checking...";
-  try {
-    const response = await fetch(API + "/", {cache:"no-store"});
-    const data = await response.json();
-    el.textContent = data.status === "online" ? "Backend: online" : "Backend: unavailable";
-  } catch {
-    el.textContent = "Backend: offline";
-  }
-}
-
-async function testWebhook() {
-  const btn = document.getElementById("testWebhookBtn");
-  const status = document.getElementById("webhookStatus");
-  btn.disabled = true;
-  status.textContent = "Sending test message...";
-  try {
-    const response = await fetch(API + "/test-webhook", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({})
-    });
-    const data = await response.json();
-    if (response.ok && data.success) {
-      status.textContent = "✅ Test message sent! Check your Discord channel.";
-    } else {
-      status.textContent = "❌ Test failed: " + (data.error || "Server error");
-    }
-  } catch {
-    status.textContent = "❌ Could not contact the backend.";
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function startCheckCooldown(milliseconds) {
-  checkCooldownUntil = Date.now() + Math.max(1000, milliseconds || 60000);
-  const btn = document.getElementById("checkBtn");
-  const status = document.getElementById("checkStatus");
-  if (cooldownInterval) clearInterval(cooldownInterval);
-
-  const update = () => {
-    const seconds = Math.max(0, Math.ceil((checkCooldownUntil - Date.now()) / 1000));
-    if (seconds <= 0) {
-      clearInterval(cooldownInterval);
-      cooldownInterval = null;
-      btn.disabled = false;
-      btn.textContent = "Check Availability";
-      status.textContent = "Cooldown finished. You can try one check now.";
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = "Wait " + seconds + "s";
-    status.textContent = "⏳ Discord rate limit: checking is paused for " + seconds + " more seconds. Don't retry until the timer ends.";
-  };
-  update();
-  cooldownInterval = setInterval(update, 1000);
-}
-
-async function checkUsername() {
-  if (Date.now() < checkCooldownUntil) return;
-  const input = document.getElementById("usernameInput");
-  const btn = document.getElementById("checkBtn");
-  const status = document.getElementById("checkStatus");
-  const username = input.value.trim().toLowerCase();
-
-  if (!/^[a-z0-9_.]{2,4}$/.test(username) || username.length !== 4) {
-    status.textContent = "Enter a valid 4-character username.";
-    return;
-  }
-
-  btn.disabled = true;
-  status.textContent = "Checking " + username + "...";
-
-  try {
-    const response = await fetch(API + "/check", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({username})
-    });
-    const data = await response.json();
-
-    if (data.status === "AVAILABLE") {
-      status.textContent = "🟢 Appears available: " + username + ". Sending webhook notification...";
-      addHistory(username, "Appears available");
-      try {
-        const notify = await fetch(API + "/notify", {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({username})
-        });
-        status.textContent = notify.ok
-          ? "🟢 Appears available. Webhook notification sent!"
-          : "🟢 Appears available, but notification failed.";
-      } catch {
-        status.textContent = "🟢 Appears available, but notification failed.";
-      }
-    } else if (data.status === "TAKEN") {
-      status.textContent = "🔴 Taken: " + username;
-      addHistory(username, "Taken");
-    } else if (data.status === "RATE_LIMITED" || response.status === 429) {
-      addHistory(username, "Rate limited");
-      startCheckCooldown(data.retryAfterMs || 60000);
-    } else {
-      status.textContent = "⚠️ Result unknown. Try again later.";
-      addHistory(username, "Unknown");
-    }
-  } catch {
-    status.textContent = "⚠️ Could not reach the checker. Result unknown.";
-  } finally {
-    if (Date.now() >= checkCooldownUntil) btn.disabled = false;
-  }
-}
-
-function exportFavorites() {
-  if (!favorites.length) {
-    alert("No favourites to export.");
-    return;
-  }
-  const blob = new Blob([favorites.join("\n")], {type:"text/plain"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "shinobi-favorites.txt";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-renderFavorites();
-renderHistory();
-checkBackend();
-generateName();
+const API="https://username-sniper-backend.onrender.com";
+const ALPHABET="abcdefghijklmnopqrstuvwxyz0123456789";
+const KEY={f:"shinobiFavorites",h:"shinobiHistory",g:"shinobiGenerated",t:"shinobiTheme"};
+let current="----",cooldownUntil=0,cooldownTimer=null,backendData=null;
+function read(key){try{const v=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(v)?v:[]}catch{return[]}}
+function write(key,val){localStorage.setItem(key,JSON.stringify(val))}
+let favorites=read(KEY.f),history=read(KEY.h),generated=read(KEY.g);
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.style.display="block";clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display="none",2300)}
+function navigate(page){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById("page-"+page).classList.add("active");document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));document.getElementById("crumb").textContent=page[0].toUpperCase()+page.slice(1);if(page==="lists")renderFavorites();if(page==="results")renderHistory();window.scrollTo(0,0)}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.page)));
+function generateOne(){let name="";for(let i=0;i<4;i++)name+=ALPHABET[Math.floor(Math.random()*ALPHABET.length)];current=name;document.getElementById("quickCandidate").textContent=name;document.getElementById("mainCandidate").textContent=name;document.getElementById("genMessage").textContent="Generated locally. No Discord request was made.";generated.unshift({name,at:Date.now()});generated=generated.slice(0,1000);write(KEY.g,generated);refreshStats()}
+async function copyCurrent(){if(current==="----"){toast("Generate a username first");return}try{await navigator.clipboard.writeText(current);toast("Copied "+current)}catch{toast("Clipboard unavailable in this browser")}}
+function saveCurrent(){if(current==="----")return;if(!favorites.includes(current)){favorites.unshift(current);write(KEY.f,favorites)}renderFavorites();refreshStats();toast(favorites.includes(current)?"Saved "+current:"Already saved")}
+function fillCandidate(){if(current==="----")generateOne();document.getElementById("checkInput").value=current}
+function addHistory(name,status){history.unshift({name,status,at:Date.now()});history=history.slice(0,300);write(KEY.h,history);renderHistory();refreshStats()}
+function renderFavorites(){const el=document.getElementById("favoriteList");document.getElementById("favBadge").textContent=favorites.length+" saved";if(!favorites.length){el.innerHTML='<div class="empty">No saved usernames yet.</div>';return}el.replaceChildren();favorites.forEach(name=>{const row=document.createElement("div");row.className="listitem";const left=document.createElement("strong");left.textContent=name;const actions=document.createElement("div");actions.className="row";const use=document.createElement("button");use.className="secondary";use.textContent="Use";use.onclick=()=>{document.getElementById("checkInput").value=name;navigate("checker")};const remove=document.createElement("button");remove.className="danger";remove.textContent="Remove";remove.onclick=()=>{favorites=favorites.filter(x=>x!==name);write(KEY.f,favorites);renderFavorites();refreshStats()};actions.append(use,remove);row.append(left,actions);el.append(row)})}
+function renderHistory(){const body=document.getElementById("historyRows");if(!history.length){body.innerHTML='<tr><td colspan="3" class="empty">No checks recorded yet.</td></tr>';return}body.replaceChildren();history.forEach(item=>{const tr=document.createElement("tr");const a=document.createElement("td"),b=document.createElement("td"),c=document.createElement("td");const code=document.createElement("code");code.textContent=item.name;a.append(code);const tag=document.createElement("span");tag.className="tag "+(item.status==="APPEARS AVAILABLE"?"good":item.status==="TAKEN"?"bad":"");tag.textContent=item.status;b.append(tag);c.textContent=new Date(item.at).toLocaleString();tr.append(a,b,c);body.append(tr)})}
+function refreshStats(){document.getElementById("mGenerated").textContent=generated.length;document.getElementById("mSaved").textContent=favorites.length;document.getElementById("mChecks").textContent=history.length;const recent=document.getElementById("recentActivity");if(!history.length&&!generated.length){recent.className="empty";recent.textContent="Nothing here yet. Generate a few names to get started.";return}recent.className="list";recent.replaceChildren();const items=[...history.slice(0,4).map(x=>({name:x.name,sub:x.status})),...generated.slice(0,4).map(x=>({name:x.name,sub:"Generated locally"}))].slice(0,6);items.forEach(x=>{const d=document.createElement("div");d.className="listitem";const l=document.createElement("div");const s=document.createElement("strong");s.textContent=x.name;const sm=document.createElement("small");sm.textContent=x.sub;l.append(s,sm);d.append(l);recent.append(d)})}
+function generateBatch(){const n=Number(document.getElementById("batchSize")?.value||50);const seen=new Set([...favorites,...generated.map(x=>x.name)]);const fresh=[];let attempts=0;while(fresh.length<n&&attempts<n*20){let s="";for(let i=0;i<4;i++)s+=ALPHABET[Math.floor(Math.random()*36)];attempts++;if(!seen.has(s)){seen.add(s);fresh.push(s)}}generated=[...fresh.map(name=>({name,at:Date.now()})),...generated].slice(0,1000);write(KEY.g,generated);document.getElementById("batchMessage").textContent="Generated "+fresh.length+" unique candidates locally. Nothing was checked on Discord.";refreshStats();toast(fresh.length+" candidates generated")}
+function importNames(){const raw=document.getElementById("importText").value.split(/\s+/).map(x=>x.trim().toLowerCase()).filter(Boolean);let count=0;raw.forEach(x=>{if(/^[a-z0-9]{4}$/.test(x)&&!favorites.includes(x)){favorites.push(x);count++}});write(KEY.f,favorites);document.getElementById("importMessage").textContent="Imported "+count+" valid new names. Only 4 lowercase letters/numbers are accepted.";renderFavorites();refreshStats()}
+function download(name,data,type){const blob=new Blob([data],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportNames(){download("shinobi-favourites.txt",favorites.join("\n"),"text/plain");toast("Exported favourites")}
+function exportHistory(){download("shinobi-history.csv","username,result,date\n"+history.map(x=>[x.name,x.status,new Date(x.at).toISOString()].join(",")).join("\n"),"text/csv")}
+function exportAll(){download("shinobi-data.json",JSON.stringify({favorites,history,generated},null,2),"application/json")}
+function clearHistory(){if(!confirm("Clear all local check history?"))return;history=[];write(KEY.h,history);renderHistory();refreshStats()}
+function clearLocalData(){if(!confirm("Delete all favourites, generated candidates, and history from this browser?"))return;favorites=[];history=[];generated=[];Object.values(KEY).forEach(k=>localStorage.removeItem(k));renderFavorites();renderHistory();refreshStats();toast("Local data cleared")}
+function setTheme(light){document.body.classList.toggle("light",light);localStorage.setItem(KEY.t,light?"light":"dark")}
+function showCooldown(ms){cooldownUntil=Date.now()+Math.max(0,ms||0);const update=()=>{const s=Math.max(0,Math.ceil((cooldownUntil-Date.now())/1000));const b=document.getElementById("checkButton");if(s>0){b.disabled=true;b.textContent="Wait "+s+"s"}else{b.disabled=false;b.textContent="Check once";if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null}}};update();if(cooldownTimer)clearInterval(cooldownTimer);if(ms>0)cooldownTimer=setInterval(update,1000)}
+async function checkBackend(){try{const r=await fetch(API+"/",{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();backendData=d;const online=d.status==="online";document.getElementById("topStatus").textContent=online?"Backend online":"Backend unavailable";document.getElementById("sideStatus").textContent=online?"Online":"Unavailable";document.getElementById("mBackend").textContent=online?"ONLINE":"OFFLINE";document.getElementById("mBackendSub").textContent=d.webhookConfigured?"Webhook configured":"Webhook not configured";document.getElementById("statusDot").style.background=online?"var(--good)":"var(--bad)";document.getElementById("serviceInfo").textContent="Backend: "+d.status+" · Webhook configured: "+Boolean(d.webhookConfigured);if(d.discordCooldownRemainingMs>0)showCooldown(d.discordCooldownRemainingMs)}catch(e){document.getElementById("topStatus").textContent="Backend offline";document.getElementById("sideStatus").textContent="Offline";document.getElementById("mBackend").textContent="OFFLINE";document.getElementById("statusDot").style.background="var(--bad)";document.getElementById("serviceInfo").textContent="Could not contact Render: "+e.message}}
+async function manualCheck(){if(Date.now()<cooldownUntil)return;const input=document.getElementById("checkInput"),msg=document.getElementById("checkMessage"),name=input.value.trim().toLowerCase(),btn=document.getElementById("checkButton");if(!/^[a-z0-9]{4}$/.test(name)){msg.textContent="Enter exactly 4 lowercase letters or numbers.";return}btn.disabled=true;btn.textContent="Checking…";msg.textContent="Sending one manual check…";try{const r=await fetch(API+"/check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:name})});const d=await r.json();if(d.status==="AVAILABLE"){msg.className="notice good";msg.textContent="Discord endpoint reported "+name+" as available. Confirm inside Discord before relying on it.";addHistory(name,"APPEARS AVAILABLE")}else if(d.status==="TAKEN"){msg.className="notice";msg.textContent=name+" is reported as taken.";addHistory(name,"TAKEN")}else if(d.status==="RATE_LIMITED"||r.status===429){msg.className="notice";msg.textContent="Discord rate-limited this check. No result was confirmed. The pause timer is active.";addHistory(name,"UNKNOWN — RATE LIMITED");showCooldown(d.retryAfterMs||60000)}else{msg.className="notice";msg.textContent="No reliable result. Recorded as UNKNOWN.";addHistory(name,"UNKNOWN")}}catch(e){msg.className="notice";msg.textContent="Could not reach checker. Result is UNKNOWN.";addHistory(name,"UNKNOWN")}finally{if(Date.now()>=cooldownUntil){btn.disabled=false;btn.textContent="Check once"}}}
+async function testWebhook(){const b=document.getElementById("webhookButton"),m=document.getElementById("webhookMessage");b.disabled=true;m.textContent="Sending one test message…";try{const r=await fetch(API+"/test-webhook",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const d=await r.json();m.textContent=r.ok&&d.success?"Test message sent. Check your Discord channel.":(d.error||"Webhook test failed.");m.className="notice "+(r.ok&&d.success?"good":"")}catch(e){m.textContent="Could not contact backend.";m.className="notice"}finally{b.disabled=false}}
+const savedTheme=localStorage.getItem(KEY.t);if(savedTheme==="light"){document.body.classList.add("light");document.getElementById("lightToggle").checked=true}
+renderFavorites();renderHistory();refreshStats();generateOne();checkBackend();
 </script>
 </body>
 </html>

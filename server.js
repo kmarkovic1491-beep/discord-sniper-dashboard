@@ -1,8 +1,8 @@
 
+
 const express = require("express");
 
 const app = express();
-
 app.use(express.json({ limit: "10kb" }));
 
 const allowedOrigin = "https://kmarkovic1491-beep.github.io";
@@ -23,23 +23,19 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-
+  if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
-// Backend status
 app.get("/", (req, res) => {
   res.json({
     status: "online",
     checker: "ready",
+    checkIntervalMs: 2000,
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL)
   });
 });
 
-// Check one username
 app.post("/check", async (req, res) => {
   const username = req.body?.username;
 
@@ -55,7 +51,7 @@ app.post("/check", async (req, res) => {
 
   if (
     lastChecks.has(ip) &&
-    now - lastChecks.get(ip) < 5000
+    now - lastChecks.get(ip) < 2000
   ) {
     return res.status(429).json({ status: "RATE_LIMITED" });
   }
@@ -75,17 +71,12 @@ app.post("/check", async (req, res) => {
     });
 
     if (response.status === 429) {
-      return res.status(429).json({
-        status: "RATE_LIMITED"
-      });
+      return res.status(429).json({ status: "RATE_LIMITED" });
     }
 
     const data = await response.json();
 
-    if (
-      response.ok &&
-      typeof data.taken === "boolean"
-    ) {
+    if (response.ok && typeof data.taken === "boolean") {
       if (!data.taken) {
         verifiedNames.set(username, Date.now() + 60000);
       }
@@ -102,7 +93,6 @@ app.post("/check", async (req, res) => {
   }
 });
 
-// Discord notification
 app.post("/notify", async (req, res) => {
   const username = req.body?.username;
   const webhook = process.env.DISCORD_WEBHOOK_URL;
@@ -123,7 +113,6 @@ app.post("/notify", async (req, res) => {
 
   if (!expiry || expiry < Date.now()) {
     verifiedNames.delete(username);
-
     return res.status(403).json({
       error: "Username not verified"
     });
@@ -138,8 +127,7 @@ app.post("/notify", async (req, res) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        content:
-          `🎯 Username reported AVAILABLE: **${username}**`
+        content: `🎯 Username reported AVAILABLE: **${username}**`
       }),
       signal: AbortSignal.timeout(10000)
     });
@@ -162,5 +150,5 @@ app.post("/notify", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
+  console.log(`Backend running on ${PORT}`);
 });

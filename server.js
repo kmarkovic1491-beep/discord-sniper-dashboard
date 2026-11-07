@@ -1,14 +1,17 @@
 
-
 const express = require("express");
-const crypto = require("crypto");
 
 const app = express();
 
-const allowedOrigin =
-  "https://kmarkovic1491-beep.github.io";
+app.use(express.json({ limit: "10kb" }));
 
-// Allow requests from the dashboard
+const allowedOrigin = "https://kmarkovic1491-beep.github.io";
+const API_URL =
+  "https://discord.com/api/v9/unique-username/username-attempt-unauthed";
+
+const lastChecks = new Map();
+const verifiedNames = new Map();
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
@@ -27,51 +30,106 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-
-// Safe configuration diagnostic
+// Backend status
 app.get("/", (req, res) => {
   res.json({
     status: "online",
-    passwordConfigured: Boolean(process.env.DASHBOARD_PASSWORD),
+    checker: "ready",
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL)
   });
 });
 
-// Send Discord notification
-app.post("/notify", async (req, res) => {
-  const { password, username } = req.body || {};
-
-  const secret = process.env.DASHBOARD_PASSWORD;
-  const webhook = process.env.DISCORD_WEBHOOK_URL;
-
-  if (!secret || !webhook) {
-    return res.status(500).json({
-      error: "Server not configured"
-    });
-  }
-
-  if (
-    typeof password !== "string" ||
-    password.length !== secret.length ||
-    !crypto.timingSafeEqual(
-      Buffer.from(password),
-      Buffer.from(secret)
-    )
-  ) {
-    return res.status(401).json({
-      error: "Wrong password"
-    });
-  }
+// Check one username
+app.post("/check", async (req, res) => {
+  const username = req.body?.username;
 
   if (
     typeof username !== "string" ||
     !/^[a-z0-9_.]{2,4}$/.test(username)
   ) {
+    return res.status(400).json({ status: "INVALID" });
+  }
+
+  const ip = req.ip;
+  const now = Date.now();
+
+  if (
+    lastChecks.has(ip) &&
+    now - lastChecks.get(ip) < 5000
+  ) {
+    return res.status(429).json({ status: "RATE_LIMITED" });
+  }
+
+  lastChecks.set(ip, now);
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ username }),
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (response.status === 429) {
+      return res.status(429).json({
+        status: "RATE_LIMITED"
+      });
+    }
+
+    const data = await response.json();
+
+    if (
+      response.ok &&
+      typeof data.taken === "boolean"
+    ) {
+      if (!data.taken) {
+        verifiedNames.set(username, Date.now() + 60000);
+      }
+
+      return res.json({
+        status: data.taken ? "TAKEN" : "AVAILABLE"
+      });
+    }
+
+    return res.status(502).json({ status: "ERROR" });
+
+  } catch (error) {
+    return res.status(502).json({ status: "ERROR" });
+  }
+});
+
+// Discord notification
+app.post("/notify", async (req, res) => {
+  const username = req.body?.username;
+  const webhook = process.env.DISCORD_WEBHOOK_URL;
+
+  if (!webhook) {
+    return res.status(500).json({
+      error: "Webhook not configured"
+    });
+  }
+
+  if (typeof username !== "string") {
     return res.status(400).json({
       error: "Invalid username"
     });
   }
+
+  const expiry = verifiedNames.get(username);
+
+  if (!expiry || expiry < Date.now()) {
+    verifiedNames.delete(username);
+
+    return res.status(403).json({
+      error: "Username not verified"
+    });
+  }
+
+  verifiedNames.delete(username);
 
   try {
     const response = await fetch(webhook, {
@@ -80,20 +138,22 @@ app.post("/notify", async (req, res) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        content: `🎯 Username submitted for verification: **${username}**`
-      })
+        content:
+          `🎯 Username reported AVAILABLE: **${username}**`
+      }),
+      signal: AbortSignal.timeout(10000)
     });
 
     if (!response.ok) {
       return res.status(502).json({
-        error: "Discord webhook failed"
+        error: "Discord notification failed"
       });
     }
 
     return res.json({ success: true });
 
   } catch (error) {
-    return res.status(500).json({
+    return res.status(502).json({
       error: "Notification failed"
     });
   }

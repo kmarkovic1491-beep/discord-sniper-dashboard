@@ -12,6 +12,8 @@ const IP_MIN_INTERVAL_MS = 2500;
 const IP_HOURLY_LIMIT = 30;
 const ALERT_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
 const notifiedAvailableNames = new Set();
+let lastTestAlertAt = 0;
+const TEST_ALERT_COOLDOWN_MS = 60000;
 
 async function notifyAvailableUsername(username) {
   if (!ALERT_WEBHOOK_URL || notifiedAvailableNames.has(username)) return;
@@ -131,6 +133,40 @@ const server = http.createServer((req, res) => {
       discordRequestsEnabled: true,
       webhookAlertsEnabled: Boolean(ALERT_WEBHOOK_URL)
     }, origin);
+  }
+
+  if (pathname === "/api/test-alert" && req.method === "POST") {
+    if (!ALERT_WEBHOOK_URL) {
+      return send(res, 503, { message: "Webhook alerts are not configured." }, origin);
+    }
+    const now = Date.now();
+    const remaining = TEST_ALERT_COOLDOWN_MS - (now - lastTestAlertAt);
+    if (remaining > 0) {
+      return send(res, 429, {
+        message: "Please wait before sending another test alert.",
+        retryAfterMs: remaining
+      }, origin);
+    }
+    lastTestAlertAt = now;
+    try {
+      const response = await fetch(ALERT_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          content: "LAZER SNIPER: test alert — your webhook connection is working.",
+          allowed_mentions: { parse: [] }
+        }),
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) {
+        console.error("Webhook test alert failed with status", response.status);
+        return send(res, 502, { message: "Discord rejected the test alert. Check the webhook in Render." }, origin);
+      }
+      return send(res, 200, { sent: true }, origin);
+    } catch (error) {
+      console.error("Webhook test alert failed:", error.message);
+      return send(res, 502, { message: "Could not reach Discord to send the test alert." }, origin);
+    }
   }
 
   if (pathname === "/api/check" && req.method === "POST") {

@@ -10,6 +10,31 @@ const BODY_LIMIT = 2048;
 const CHECK_INTERVAL_MS = 2500;
 const IP_MIN_INTERVAL_MS = 2500;
 const IP_HOURLY_LIMIT = 30;
+const ALERT_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
+const notifiedAvailableNames = new Set();
+
+async function notifyAvailableUsername(username) {
+  if (!ALERT_WEBHOOK_URL || notifiedAvailableNames.has(username)) return;
+  notifiedAvailableNames.add(username);
+  try {
+    const response = await fetch(ALERT_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        content: `LAZER SNIPER: username appears available — ${username}. Open Discord to verify and claim manually.`,
+        allowed_mentions: { parse: [] }
+      }),
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) {
+      notifiedAvailableNames.delete(username);
+      console.error("Webhook alert failed with status", response.status);
+    }
+  } catch (error) {
+    notifiedAvailableNames.delete(username);
+    console.error("Webhook alert failed:", error.message);
+  }
+}
 
 fs.mkdirSync(path.dirname(dataFile), { recursive: true });
 if (!fs.existsSync(dataFile)) fs.writeFileSync(dataFile, "[]");
@@ -103,7 +128,8 @@ const server = http.createServer((req, res) => {
       online: true,
       service: "LAZER SNIPER",
       availability: "BEST_EFFORT",
-      discordRequestsEnabled: true
+      discordRequestsEnabled: true,
+      webhookAlertsEnabled: Boolean(ALERT_WEBHOOK_URL)
     }, origin);
   }
 
@@ -146,6 +172,9 @@ const server = http.createServer((req, res) => {
             retryAfterMs: result.retryAfterMs,
             message: "Please wait before checking another name."
           }, origin);
+        }
+        if (result.status === "AVAILABLE") {
+          void notifyAvailableUsername(name);
         }
         if (result.status) return send(res, 200, result, origin);
         return send(res, 503, {

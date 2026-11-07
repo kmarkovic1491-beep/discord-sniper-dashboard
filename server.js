@@ -1,7 +1,30 @@
+
 const express = require("express");
 const crypto = require("crypto");
 
 const app = express();
+
+const allowedOrigin =
+  "https://kmarkovic1491-beep.github.io";
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin === allowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  }
+
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -18,7 +41,9 @@ app.post("/notify", async (req, res) => {
   const webhook = process.env.DISCORD_WEBHOOK_URL;
 
   if (!secret || !webhook) {
-    return res.status(500).json({ error: "Server not configured" });
+    return res.status(500).json({
+      error: "Server not configured"
+    });
   }
 
   if (
@@ -29,36 +54,49 @@ app.post("/notify", async (req, res) => {
       Buffer.from(secret)
     )
   ) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({
+      error: "Wrong password"
+    });
   }
 
   if (
     typeof username !== "string" ||
     !/^[a-z0-9_.]{2,4}$/.test(username)
   ) {
-    return res.status(400).json({ error: "Invalid username" });
+    return res.status(400).json({
+      error: "Invalid username"
+    });
   }
 
   try {
     const response = await fetch(webhook, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        content: `🎯 Username submitted for verification: **${username}**`
+        content:
+          `🎯 Username submitted for verification: **${username}**`
       })
     });
 
     if (!response.ok) {
-      return res.status(502).json({ error: "Webhook failed" });
+      return res.status(502).json({
+        error: "Discord webhook failed"
+      });
     }
 
     res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: "Notification failed" });
+
+  } catch (error) {
+    res.status(500).json({
+      error: "Notification failed"
+    });
   }
 });
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });

@@ -8,25 +8,24 @@
 *{box-sizing:border-box}
 body{margin:0;background:#090612;color:#f5eaff;font-family:Arial,sans-serif}
 header{text-align:center;padding:25px;background:#170d29;border-bottom:1px solid #874ac0}
-h1{color:#d9a5ff;margin:0}
+h1,h2{color:#d9a5ff}
 nav{display:flex;justify-content:center;gap:8px;padding:15px;flex-wrap:wrap}
-button{background:#32174b;color:white;border:1px solid #a45be0;padding:12px 16px;border-radius:9px;font-weight:bold}
+button{background:#32174b;color:white;border:1px solid #a45be0;padding:12px 16px;border-radius:9px;font-weight:bold;margin:4px}
 button:active{background:#874ac0}
 main{max-width:650px;margin:auto;padding:15px}
 .panel{background:#170f25;border:1px solid #573078;border-radius:14px;padding:20px;margin-bottom:15px}
-h2{color:#d9a5ff}
-input{width:100%;padding:13px;background:#0d0915;color:white;border:1px solid #874ac0;border-radius:8px;margin:10px 0}
 .hidden{display:none!important}
-#candidate{font-size:28px;text-align:center;padding:25px;color:#e5baff;overflow-wrap:anywhere}
+#candidate{font-size:34px;text-align:center;padding:25px;color:#e5baff;overflow-wrap:anywhere}
 .result{padding:12px;background:#291638;border-radius:8px;margin:8px 0}
 #intro{position:fixed;inset:0;background:#090612;z-index:5;display:flex;align-items:center;justify-content:center;text-align:center;padding:25px}
-#intro h1{font-size:32px}
-#loading{height:5px;background:#301b43;margin:25px auto;width:220px;overflow:hidden}
-#bar{height:100%;width:0;background:#d9a5ff;transition:width 1.5s}
-#streak{position:fixed;top:50%;left:-100%;width:100%;height:3px;background:#fff;box-shadow:0 0 18px 5px #bd63ff;z-index:8;pointer-events:none}
+#loading{height:5px;background:#301b43;margin:25px auto;width:220px}
+#bar{height:100%;width:0;background:#d9a5ff}
+input{padding:12px;background:#0d0915;color:white;border:1px solid #874ac0;border-radius:8px}
+.status{color:#ffd477;font-weight:bold}
 </style>
 </head>
 <body>
+
 <div id="intro">
  <div>
   <h1>🎯 USERNAME SNIPER</h1>
@@ -35,70 +34,104 @@ input{width:100%;padding:13px;background:#0d0915;color:white;border:1px solid #8
   <button onclick="enter()">ENTER DASHBOARD</button>
  </div>
 </div>
-<div id="streak"></div>
+
 <header>
 <h1>🎯 USERNAME SNIPER</h1>
 <p>Discord Username Dashboard</p>
 </header>
+
 <nav>
 <button onclick="show('home')">Overview</button>
 <button onclick="show('generator')">Generator</button>
 <button onclick="show('results')">Results</button>
 </nav>
+
 <main>
 <section id="home" class="panel">
 <h2>Overview</h2>
 <p>Generated usernames: <b id="count">0</b></p>
 <p>Saved favourites: <b id="savedCount">0</b></p>
-<button onclick="show('generator')">START GENERATING</button>
+<p>Generator: <b id="runStatus">STOPPED</b></p>
+<button onclick="show('generator')">OPEN GENERATOR</button>
 </section>
+
 <section id="generator" class="panel hidden">
-<h2>Username Generator</h2>
-<label>Username length (2–8)</label>
-<input id="length" type="number" min="2" max="8" value="4">
-<button onclick="generate()">GENERATE</button>
+<h2>Continuous Generator</h2>
+<p>Username lengths: 2, 3 or 4 characters</p>
+<button onclick="start()">▶ START</button>
+<button onclick="stop()">■ STOP</button>
 <div id="candidate">READY?</div>
+<p class="status" id="availability">UNVERIFIED — NOT CHECKED BY DISCORD</p>
 <button onclick="save()">★ SAVE FAVOURITE</button>
-<p>Availability must be checked manually through Discord. Generated names are suggestions only.</p>
+<p>Names are generated suggestions. Availability is not verified.</p>
 </section>
+
 <section id="results" class="panel hidden">
 <h2>Saved favourites</h2>
 <div id="list">Nothing saved yet.</div>
 </section>
 </main>
+
 <script>
 let total=0,current='',favourites=[];
+let timer=null;
+
 function enter(){
  document.getElementById('intro').classList.add('hidden');
  document.getElementById('bar').style.width='100%';
- const streak=document.getElementById('streak');
- streak.animate([{left:'-100%'},{left:'100%'}],{duration:650});
  try{
   let c=new(window.AudioContext||window.webkitAudioContext)();
   let o=c.createOscillator(),g=c.createGain();
   o.connect(g);g.connect(c.destination);
-  o.frequency.value=180;g.gain.value=.08;
+  o.frequency.value=180;
+  g.gain.value=.08;
   o.start();o.stop(c.currentTime+.18);
  }catch(e){}
 }
+
 function show(id){
  document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
  document.getElementById(id).classList.remove('hidden');
 }
+
 function generate(){
- let n=Math.max(2,Math.min(8,Number(document.getElementById('length').value)||4));
+ let n=2+Math.floor(Math.random()*3);
  let chars='abcdefghijklmnopqrstuvwxyz0123456789_.';
  current='';
- for(let i=0;i<n;i++)current+=chars[Math.floor(Math.random()*chars.length)];
+ for(let i=0;i<n;i++){
+  current+=chars[Math.floor(Math.random()*chars.length)];
+ }
  document.getElementById('candidate').textContent=current;
+ document.getElementById('availability').textContent='UNVERIFIED — NOT CHECKED BY DISCORD';
  total++;
  document.getElementById('count').textContent=total;
 }
+
+function start(){
+ if(timer)return;
+ generate();
+ timer=setInterval(generate,1000);
+ document.getElementById('runStatus').textContent='RUNNING';
+}
+
+function stop(){
+ if(timer){
+  clearInterval(timer);
+  timer=null;
+ }
+ document.getElementById('runStatus').textContent='STOPPED';
+}
+
 function save(){
- if(!current){alert('Generate a username first!');return;}
+ if(!current){
+  alert('Generate a username first!');
+  return;
+ }
  if(!favourites.includes(current))favourites.push(current);
  document.getElementById('savedCount').textContent=favourites.length;
- document.getElementById('list').innerHTML=favourites.map(x=>'<div class="result">'+x+'</div>').join('');
+ document.getElementById('list').innerHTML=favourites.map(x=>
+  '<div class="result">'+x+' — UNVERIFIED</div>'
+ ).join('');
 }
 </script>
 </body>

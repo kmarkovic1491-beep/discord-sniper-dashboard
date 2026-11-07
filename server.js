@@ -1,4 +1,5 @@
 
+
 const express = require("express");
 const crypto = require("crypto");
 
@@ -7,6 +8,7 @@ const app = express();
 const allowedOrigin =
   "https://kmarkovic1491-beep.github.io";
 
+// Allow requests from the dashboard
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
@@ -27,15 +29,18 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// Safe configuration diagnostic
 app.get("/", (req, res) => {
   res.json({
     status: "online",
-    message: "Username Sniper backend is running"
+    passwordConfigured: Boolean(process.env.DASHBOARD_PASSWORD),
+    webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL)
   });
 });
 
+// Send Discord notification
 app.post("/notify", async (req, res) => {
-  const { password, username } = req.body;
+  const { password, username } = req.body || {};
 
   const secret = process.env.DASHBOARD_PASSWORD;
   const webhook = process.env.DISCORD_WEBHOOK_URL;
@@ -75,8 +80,7 @@ app.post("/notify", async (req, res) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        content:
-          `🎯 Username submitted for verification: **${username}**`
+        content: `🎯 Username submitted for verification: **${username}**`
       })
     });
 
@@ -86,10 +90,10 @@ app.post("/notify", async (req, res) => {
       });
     }
 
-    res.json({ success: true });
+    return res.json({ success: true });
 
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       error: "Notification failed"
     });
   }

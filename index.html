@@ -38,7 +38,7 @@
 (function(){
 "use strict";
 const $=id=>document.getElementById(id), KEY="snipers-og-crimson-moon-v1";
-let state={targets:[],history:[],message:"🔴 SNIPERS OG — {username} was marked {status}.",workerUrl:"",dashboardKey:""};
+let state={targets:[],history:[],message:"🔴 SNIPERS OG — {username} was marked {status}.",workerUrl:""};
 try{const v=JSON.parse(localStorage.getItem(KEY)||"{}");if(v&&typeof v==="object")state=Object.assign(state,v)}catch(e){}
 if(!Array.isArray(state.targets))state.targets=[];if(!Array.isArray(state.history))state.history=[];
 let ideas=[];

@@ -76,6 +76,8 @@ async function checkDiscordUsername(username) {
 
 const server = http.createServer((req, res) => {
   const origin = req.headers.origin || "";
+  const pathname = new URL(req.url || "/", "http://localhost").pathname;
+  console.log("Request", req.method, pathname);
   if (!allowedOrigin(origin)) return send(res, 403, { error: "Origin not allowed" });
 
   if (req.method === "OPTIONS") {
@@ -90,7 +92,7 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  if (req.url === "/api/status" && req.method === "GET") {
+  if (pathname === "/api/status" && req.method === "GET") {
     return send(res, 200, {
       online: true,
       service: "LAZER SNIPER",
@@ -99,7 +101,7 @@ const server = http.createServer((req, res) => {
     }, origin);
   }
 
-  if (req.url === "/api/check" && req.method === "POST") {
+  if (pathname === "/api/check" && req.method === "POST") {
     const length = Number(req.headers["content-length"] || 0);
     if (length > BODY_LIMIT) return send(res, 413, { error: "Request too large" }, origin);
 
@@ -153,11 +155,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.url === "/api/targets" && req.method === "GET") {
+  if (pathname === "/api/targets" && req.method === "GET") {
     return send(res, 200, { targets: readTargets() }, origin);
   }
 
-  if (req.url === "/api/targets" && req.method === "POST") {
+  if (pathname === "/api/targets" && req.method === "POST") {
     let body = "";
     req.on("data", chunk => {
       body += chunk;
@@ -183,14 +185,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.url.startsWith("/api/targets/") && req.method === "DELETE") {
-    const name = decodeURIComponent(req.url.slice("/api/targets/".length)).toLowerCase();
+  if (pathname.startsWith("/api/targets/") && req.method === "DELETE") {
+    const name = decodeURIComponent(pathname.slice("/api/targets/".length)).toLowerCase();
     const targets = readTargets().filter(item => item.username !== name);
     saveTargets(targets);
     return send(res, 200, { targets }, origin);
   }
 
-  if (req.url === "/" || req.url === "/index.html") {
+  if (pathname === "/" || pathname === "/index.html") {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "x-content-type-options": "nosniff" });
     return fs.createReadStream(path.join(root, "index.html")).pipe(res);
   }

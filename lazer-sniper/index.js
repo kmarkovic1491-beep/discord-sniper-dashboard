@@ -152,7 +152,8 @@ const server = http.createServer((req, res) => {
           status: "UNKNOWN",
           message: result.rateLimited
             ? "Discord rate-limited this check. Try again later."
-            : "Discord could not verify this name."
+            : "Discord could not verify this name.",
+          retryAfterMs: result.retryAfterMs || null
         }, origin);
       } catch {
         return send(res, 400, { error: "Invalid JSON" }, origin);

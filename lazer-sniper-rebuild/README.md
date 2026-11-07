@@ -7,7 +7,7 @@ A standalone local username idea generator, watchlist, history and Discord webho
 Requires Node.js 20 or newer.
 
 ```bash
-cd snipers-og-rebuild
+cd lazer-sniper-rebuild
 npm start
 ```
 

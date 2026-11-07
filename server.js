@@ -1,5 +1,4 @@
 
-
 const express = require("express");
 
 const app = express();
@@ -11,6 +10,7 @@ const API_URL =
 
 const lastChecks = new Map();
 const verifiedNames = new Map();
+const lastWebhookTests = new Map();
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -36,6 +36,7 @@ app.get("/", (req, res) => {
   });
 });
 
+// Check one username
 app.post("/check", async (req, res) => {
   const username = req.body?.username;
 
@@ -49,10 +50,7 @@ app.post("/check", async (req, res) => {
   const ip = req.ip;
   const now = Date.now();
 
-  if (
-    lastChecks.has(ip) &&
-    now - lastChecks.get(ip) < 2000
-  ) {
+  if (lastChecks.has(ip) && now - lastChecks.get(ip) < 2000) {
     return res.status(429).json({ status: "RATE_LIMITED" });
   }
 
@@ -87,26 +85,76 @@ app.post("/check", async (req, res) => {
     }
 
     return res.status(502).json({ status: "ERROR" });
-
   } catch (error) {
     return res.status(502).json({ status: "ERROR" });
   }
 });
 
+// Test the configured webhook
+app.post("/test-webhook", async (req, res) => {
+  const webhook = process.env.DISCORD_WEBHOOK_URL;
+  const ip = req.ip;
+  const now = Date.now();
+
+  if (!webhook) {
+    return res.status(500).json({
+      success: false,
+      error: "Webhook is not configured on the server"
+    });
+  }
+
+  if (
+    lastWebhookTests.has(ip) &&
+    now - lastWebhookTests.get(ip) < 30000
+  ) {
+    return res.status(429).json({
+      success: false,
+      error: "Please wait 30 seconds before testing again"
+    });
+  }
+
+  lastWebhookTests.set(ip, now);
+
+  try {
+    const response = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: "🍥 SHINOBI TEST — Webhook connection successful!"
+      }),
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({
+        success: false,
+        error: "Discord rejected the test message"
+      });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      error: "Could not send the test message"
+    });
+  }
+});
+
+// Notify when a recently checked username appeared available
 app.post("/notify", async (req, res) => {
   const username = req.body?.username;
   const webhook = process.env.DISCORD_WEBHOOK_URL;
 
   if (!webhook) {
-    return res.status(500).json({
-      error: "Webhook not configured"
-    });
+    return res.status(500).json({ error: "Webhook not configured" });
   }
 
-  if (typeof username !== "string") {
-    return res.status(400).json({
-      error: "Invalid username"
-    });
+  if (
+    typeof username !== "string" ||
+    !/^[a-z0-9_.]{2,4}$/.test(username)
+  ) {
+    return res.status(400).json({ error: "Invalid username" });
   }
 
   const expiry = verifiedNames.get(username);
@@ -114,7 +162,7 @@ app.post("/notify", async (req, res) => {
   if (!expiry || expiry < Date.now()) {
     verifiedNames.delete(username);
     return res.status(403).json({
-      error: "Username not verified"
+      error: "Username not recently verified"
     });
   }
 
@@ -123,9 +171,7 @@ app.post("/notify", async (req, res) => {
   try {
     const response = await fetch(webhook, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         content: `🎯 Username reported AVAILABLE: **${username}**`
       }),
@@ -139,7 +185,6 @@ app.post("/notify", async (req, res) => {
     }
 
     return res.json({ success: true });
-
   } catch (error) {
     return res.status(502).json({
       error: "Notification failed"

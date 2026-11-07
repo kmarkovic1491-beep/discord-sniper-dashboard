@@ -10,6 +10,8 @@ const API_URL =
 
 const lastChecks = new Map();
 const verifiedNames = new Map();
+// Respect Discord's upstream 429 response across every visitor using this backend.
+let discordCooldownUntil = 0;
 const lastWebhookTests = new Map();
 
 app.use((req, res, next) => {
@@ -50,8 +52,20 @@ app.post("/check", async (req, res) => {
   const ip = req.ip;
   const now = Date.now();
 
+  if (now < discordCooldownUntil) {
+    return res.status(429).json({
+      status: "RATE_LIMITED",
+      retryAfterMs: discordCooldownUntil - now,
+      message: "Discord has asked the checker to pause. Please wait."
+    });
+  }
+
   if (lastChecks.has(ip) && now - lastChecks.get(ip) < 2000) {
-    return res.status(429).json({ status: "RATE_LIMITED" });
+    return res.status(429).json({
+      status: "RATE_LIMITED",
+      retryAfterMs: 2000 - (now - lastChecks.get(ip)),
+      message: "Please wait before checking again."
+    });
   }
 
   lastChecks.set(ip, now);
@@ -69,7 +83,21 @@ app.post("/check", async (req, res) => {
     });
 
     if (response.status === 429) {
-      return res.status(429).json({ status: "RATE_LIMITED" });
+      // Discord may return Retry-After in a header or retry_after in its JSON body.
+      let body = {};
+      try { body = await response.json(); } catch {}
+      const headerSeconds = Number(response.headers.get("retry-after"));
+      const bodySeconds = Number(body.retry_after);
+      const retrySeconds = Number.isFinite(headerSeconds) && headerSeconds > 0
+        ? headerSeconds
+        : (Number.isFinite(bodySeconds) && bodySeconds > 0 ? bodySeconds : 60);
+      const retryAfterMs = Math.max(1000, Math.ceil(retrySeconds * 1000));
+      discordCooldownUntil = Math.max(discordCooldownUntil, Date.now() + retryAfterMs);
+      return res.status(429).json({
+        status: "RATE_LIMITED",
+        retryAfterMs: discordCooldownUntil - Date.now(),
+        message: "Discord has rate-limited this check. The checker is paused."
+      });
     }
 
     const data = await response.json();

@@ -7,260 +7,212 @@
 <title>Username Sniper</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090612;color:#f5eaff;font-family:Arial,sans-serif}
-header{text-align:center;padding:25px;background:#170d29;border-bottom:1px solid #874ac0}
-h1,h2{color:#d9a5ff}
-nav{display:flex;justify-content:center;gap:8px;padding:15px;flex-wrap:wrap}
-button{background:#32174b;color:white;border:1px solid #a45be0;padding:12px 16px;border-radius:9px;font-weight:bold;margin:4px;cursor:pointer}
-button:active{background:#874ac0}
-button:disabled{opacity:.5}
-main{max-width:650px;margin:auto;padding:15px}
-.panel{background:#170f25;border:1px solid #573078;border-radius:14px;padding:20px;margin-bottom:15px}
-.hidden{display:none!important}
-#candidate{font-size:34px;text-align:center;padding:25px;color:#e5baff;overflow-wrap:anywhere}
-.result{padding:12px;background:#291638;border-radius:8px;margin:8px 0;overflow-wrap:anywhere}
-#intro{position:fixed;inset:0;background:#090612;z-index:5;display:flex;align-items:center;justify-content:center;text-align:center;padding:25px}
-#loading{height:5px;background:#301b43;margin:25px auto;width:220px}
-#bar{height:100%;width:0;background:#d9a5ff;transition:width 1s}
-input{padding:12px;background:#0d0915;color:white;border:1px solid #874ac0;border-radius:8px}
-.status{color:#ffd477;font-weight:bold}
-.small{color:#bca8ce;font-size:13px}
+body{margin:0;background:#090611;color:#f5edff;font-family:Arial,sans-serif;padding:20px}
+.container{max-width:850px;margin:auto}
+h1{color:#c58aff;text-align:center;font-size:34px}
+.subtitle{text-align:center;color:#a99ab9}
+.card{background:#171020;border:1px solid #482568;border-radius:16px;padding:20px;margin:18px 0}
+h2{color:#d5a5ff;margin-top:0}
+button{background:#8b35d6;color:white;border:0;border-radius:9px;padding:12px 17px;font-weight:bold;margin:5px;cursor:pointer}
+button:disabled{opacity:.4}
+.stop{background:#a52d55}
+.secondary{background:#38264c}
+.username{font-size:36px;text-align:center;color:#d6a2ff;font-weight:bold;margin:20px}
+.status{text-align:center;font-weight:bold;font-size:18px;padding:12px}
+.available{color:#58f5a4}
+.taken{color:#ff6680}
+.unknown{color:#d5c2e9}
+input{background:#0d0913;color:white;border:1px solid #65418a;border-radius:8px;padding:12px;width:100%;margin:8px 0}
+li{padding:7px;color:#d9cce9}
+small{color:#a99ab9}
 </style>
 </head>
 <body>
+<div class="container">
 
-<div id="intro">
- <div>
-  <h1>🎯 USERNAME SNIPER</h1>
-  <p>INITIALIZING DASHBOARD...</p>
-  <div id="loading"><div id="bar"></div></div>
-  <button onclick="enter()">ENTER DASHBOARD</button>
- </div>
+<h1>🎯 USERNAME SNIPER</h1>
+<p class="subtitle">Discord Username Availability Dashboard</p>
+
+<div class="card">
+<h2>Dashboard</h2>
+<div class="username" id="username">---</div>
+<div class="status unknown" id="status">READY</div>
+<p style="text-align:center" id="message">Ready to start checking.</p>
+<div style="text-align:center">
+<button onclick="startSniping()">START CHECKING</button>
+<button class="stop" onclick="stopSniping()">STOP</button>
+<button class="secondary" onclick="checkOne()">CHECK ONE</button>
+</div>
 </div>
 
-<header>
-<h1>🎯 USERNAME SNIPER</h1>
-<p>Discord Username Dashboard</p>
-</header>
+<div class="card">
+<h2>⚙️ Settings</h2>
+<label>Backend URL</label>
+<input id="backend" value="https://username-sniper-backend.onrender.com">
+<small>Keep the backend URL as shown unless it changes.</small>
+</div>
 
-<nav>
-<button onclick="show('home')">Overview</button>
-<button onclick="show('generator')">Generator</button>
-<button onclick="show('results')">Results</button>
-</nav>
+<div class="card">
+<h2>⭐ Favourites</h2>
+<button class="secondary" onclick="saveFavourite()">SAVE CURRENT USERNAME</button>
+<ul id="favourites"></ul>
+</div>
 
-<main>
+<div class="card">
+<h2>📜 Recent History</h2>
+<ul id="history"></ul>
+</div>
 
-<section id="home" class="panel">
-<h2>Overview</h2>
-<p>Generated usernames: <b id="count">0</b></p>
-<p>Saved favourites: <b id="savedCount">0</b></p>
-<p>Generator: <b id="runStatus">STOPPED</b></p>
-<button onclick="show('generator')">OPEN GENERATOR</button>
-</section>
+<div class="card">
+<h2>🔔 Discord Alerts</h2>
+<p>Available usernames will be sent to your private Discord webhook through the backend.</p>
+<p id="alertStatus" class="unknown">Waiting for an available result.</p>
+</div>
 
-<section id="generator" class="panel hidden">
-<h2>Continuous Generator</h2>
-<p>Username lengths: 2, 3 or 4 characters</p>
-
-<button onclick="start()">▶ START</button>
-<button onclick="stop()">■ STOP</button>
-
-<div id="candidate">READY?</div>
-
-<p class="status" id="availability">UNVERIFIED — NOT CHECKED BY DISCORD</p>
-
-<button onclick="save()">★ SAVE FAVOURITE</button>
-<button id="notifyButton" onclick="notifyDiscord()">📢 SEND TO DISCORD</button>
-
-<p class="small" id="notifyStatus">Webhook notifications are available for generated candidates.</p>
-<p class="small">Names are suggestions. Availability is not verified by this website.</p>
-</section>
-
-<section id="results" class="panel hidden">
-<h2>Saved favourites</h2>
-<div id="list">Nothing saved yet.</div>
-
-<h2>Recent history</h2>
-<div id="history">Nothing generated yet.</div>
-</section>
-
-</main>
+<p class="subtitle"><small>Availability checks use an unofficial Discord endpoint. Results are not guaranteed. Checking stops if rate-limited.</small></p>
+</div>
 
 <script>
-let total=0;
-let current='';
-let favourites=[];
-let history=[];
-let timer=null;
+const BACKEND_DEFAULT = "https://username-sniper-backend.onrender.com";
+let current = "";
+let running = false;
+let checking = false;
+let historyItems = [];
+let favourites = [];
 
-const BACKEND_URL =
-"https://username-sniper-backend.onrender.com";
+const backendInput = document.getElementById("backend");
+backendInput.value = BACKEND_DEFAULT;
 
-function enter(){
- document.getElementById('intro').classList.add('hidden');
- document.getElementById('bar').style.width='100%';
-
- try{
-  let c=new(window.AudioContext||window.webkitAudioContext)();
-  let o=c.createOscillator();
-  let g=c.createGain();
-  o.connect(g);
-  g.connect(c.destination);
-  o.frequency.value=180;
-  g.gain.value=.08;
-  o.start();
-  o.stop(c.currentTime+.18);
- }catch(e){}
+function backendURL(){
+  return backendInput.value.trim().replace(/\/+$/, "");
 }
 
-function show(id){
- document.querySelectorAll('main section').forEach(s=>
-  s.classList.add('hidden')
- );
- document.getElementById(id).classList.remove('hidden');
-}
+function generateUsername(){
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let name = "";
+  const length = Math.random() < 0.5 ? 3 : 4;
 
-function generate(){
- let n=2+Math.floor(Math.random()*3);
- let chars='abcdefghijklmnopqrstuvwxyz0123456789_.';
-
- current='';
-
- for(let i=0;i<n;i++){
-  current+=chars[Math.floor(Math.random()*chars.length)];
- }
-
- document.getElementById('candidate').textContent=current;
- document.getElementById('availability').textContent=
-  'UNVERIFIED — NOT CHECKED BY DISCORD';
-
- total++;
- document.getElementById('count').textContent=total;
-
- history.unshift(current);
- history=history.slice(0,30);
- updateHistory();
-
- document.getElementById('notifyStatus').textContent=
-  'Ready to send '+current+' to Discord.';
-}
-
-function start(){
- if(timer)return;
-
- generate();
- timer=setInterval(generate,1000);
- document.getElementById('runStatus').textContent='RUNNING';
-}
-
-function stop(){
- if(timer){
-  clearInterval(timer);
-  timer=null;
- }
-
- document.getElementById('runStatus').textContent='STOPPED';
-}
-
-function save(){
- if(!current){
-  alert('Generate a username first!');
-  return;
- }
-
- if(!favourites.includes(current)){
-  favourites.push(current);
- }
-
- document.getElementById('savedCount').textContent=
-  favourites.length;
-
- updateFavourites();
-}
-
-function updateFavourites(){
- const list=document.getElementById('list');
-
- if(favourites.length===0){
-  list.textContent='Nothing saved yet.';
-  return;
- }
-
- list.innerHTML='';
-
- favourites.forEach(name=>{
-  const item=document.createElement('div');
-  item.className='result';
-  item.textContent=name+' — UNVERIFIED';
-  list.appendChild(item);
- });
-}
-
-function updateHistory(){
- const box=document.getElementById('history');
-
- if(history.length===0){
-  box.textContent='Nothing generated yet.';
-  return;
- }
-
- box.innerHTML='';
-
- history.forEach(name=>{
-  const item=document.createElement('div');
-  item.className='result';
-  item.textContent=name+' — UNVERIFIED';
-  box.appendChild(item);
- });
-}
-
-async function notifyDiscord(){
- if(!current){
-  alert('Generate a username first!');
-  return;
- }
-
- const password=prompt('Enter your dashboard notification password:');
-
- if(password===null || password===''){
-  return;
- }
-
- const button=document.getElementById('notifyButton');
- const status=document.getElementById('notifyStatus');
-
- button.disabled=true;
- status.textContent='Sending notification...';
-
- try{
-  const response=await fetch(BACKEND_URL+'/notify',{
-   method:'POST',
-   headers:{
-    'Content-Type':'application/json'
-   },
-   body:JSON.stringify({
-    password:password,
-    username:current
-   })
-  });
-
-  const data=await response.json();
-
-  if(!response.ok){
-   throw new Error(data.error||'Notification failed');
+  for(let i=0;i<length;i++){
+    name += chars[Math.floor(Math.random()*chars.length)];
   }
+  return name;
+}
 
-  status.textContent='✅ Notification sent for '+current;
-  alert('Discord notification sent!');
- }catch(error){
-  status.textContent='❌ '+error.message;
-  alert('Could not send notification: '+error.message);
- }finally{
-  button.disabled=false;
- }
+function showStatus(text, type, message){
+  const status = document.getElementById("status");
+  status.textContent = text;
+  status.className = "status " + type;
+  document.getElementById("message").textContent = message;
+}
+
+function wait(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function checkOne(){
+  if(checking) return;
+  checking = true;
+
+  current = generateUsername();
+  document.getElementById("username").textContent = current;
+  showStatus("CHECKING...", "unknown", "Contacting the checker...");
+
+  try{
+    const response = await fetch(backendURL()+"/check", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:current})
+    });
+
+    const data = await response.json();
+
+    if(response.status === 429 || data.status === "RATE_LIMITED"){
+      showStatus("RATE LIMITED", "taken", "Checking stopped. Try again later.");
+      running = false;
+      return;
+    }
+
+    if(!response.ok){
+      throw new Error(data.error || "Backend error");
+    }
+
+    const result = String(data.status || "").toUpperCase();
+
+    if(result === "AVAILABLE"){
+      showStatus("AVAILABLE ✓", "available", current + " was reported available!");
+      document.getElementById("alertStatus").textContent = "Sending Discord alert...";
+      await sendAlert(current);
+    }else if(result === "TAKEN"){
+      showStatus("TAKEN ✕", "taken", current + " is taken.");
+    }else{
+      showStatus(result || "UNKNOWN", "unknown", "No confirmed availability result.");
+    }
+
+    historyItems.unshift(current + " — " + result);
+    historyItems = historyItems.slice(0,20);
+    renderHistory();
+
+  }catch(error){
+    showStatus("ERROR", "taken", error.message + " — check your backend.");
+    running = false;
+  }finally{
+    checking = false;
+  }
+}
+
+async function sendAlert(username){
+  try{
+    const response = await fetch(backendURL()+"/notify", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username})
+    });
+
+    const data = await response.json();
+
+    if(!response.ok) throw new Error(data.error || "Alert failed");
+
+    document.getElementById("alertStatus").textContent =
+      "Discord alert sent for " + username + "!";
+  }catch(error){
+    document.getElementById("alertStatus").textContent =
+      "Alert failed: " + error.message;
+  }
+}
+
+async function startSniping(){
+  if(running) return;
+  running = true;
+  showStatus("RUNNING", "unknown", "Checking one username at a time.");
+
+  while(running){
+    await checkOne();
+    if(running) await wait(5000);
+  }
+}
+
+function stopSniping(){
+  running = false;
+  showStatus("STOPPED", "unknown", "Checker stopped.");
+}
+
+function saveFavourite(){
+  if(!current) return;
+  if(!favourites.includes(current)){
+    favourites.unshift(current);
+    renderFavourites();
+  }
+}
+
+function renderFavourites(){
+  document.getElementById("favourites").innerHTML =
+    favourites.map(name => "<li>"+name+"</li>").join("");
+}
+
+function renderHistory(){
+  document.getElementById("history").innerHTML =
+    historyItems.map(item => "<li>"+item+"</li>").join("");
 }
 </script>
-
 </body>
 </html>

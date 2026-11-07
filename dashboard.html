@@ -48,6 +48,7 @@ footer{text-align:center;color:#8992a4;padding:18px;font-size:12px}
 <div class="metric"><small>WEBHOOK SETUP</small><strong id="webhook">Checking…</strong></div>
 <div class="metric"><small>SAVED FAVOURITES</small><strong id="favCount">0</strong></div>
 <div class="metric"><small>RECENT CHECK RECORDS</small><strong id="checkCount">0</strong></div>
+<div class="metric"><small>DISCORD COOLDOWN</small><strong id="cooldown">Checking…</strong></div>
 </div>
 <p id="updated" class="status">Connecting to the Render service…</p>
 <button id="refresh" onclick="refreshDashboard()">↻ Refresh status</button>
@@ -76,6 +77,8 @@ footer{text-align:center;color:#8992a4;padding:18px;font-size:12px}
 <footer>SHINOBI CONTROL DASHBOARD · Manual checks only</footer>
 <script>
 const API="https://username-sniper-backend.onrender.com";
+let cooldownEndsAt=0;
+function showCooldown(){const el=document.getElementById("cooldown");if(!el)return;const left=Math.max(0,cooldownEndsAt-Date.now());if(!left){el.textContent="CLEAR";return}const sec=Math.ceil(left/1000);const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;el.textContent=h+"h "+m+"m "+s+"s";}
 function readList(key){try{const v=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(v)?v:[]}catch{return[]}}
 function renderLocal(){
  const favs=readList("shinobiFavorites"), history=readList("shinobiHistory");
@@ -98,14 +101,17 @@ async function refreshDashboard(){
   const data=await response.json();
   backend.textContent=data.status==="online"?"ONLINE":"RESPONDING";
   webhook.textContent=data.webhookConfigured===true?"CONFIGURED":data.webhookConfigured===false?"NOT SET":"UNKNOWN";
+  cooldownEndsAt=Date.now()+Math.max(0,Number(data.discordCooldownRemainingMs)||0);showCooldown();
   updated.textContent="Last refreshed: "+new Date().toLocaleString();
  }catch(error){
   backend.textContent="OFFLINE";
   webhook.textContent="UNKNOWN";
+  document.getElementById("cooldown").textContent="UNKNOWN";
   updated.textContent="Could not read backend status ("+error.message+").";
  }finally{btn.disabled=false}
 }
 refreshDashboard();
+setInterval(showCooldown,1000);
 </script>
 </body>
 </html>

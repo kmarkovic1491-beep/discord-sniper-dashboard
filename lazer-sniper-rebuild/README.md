@@ -1,4 +1,4 @@
-# LAZER SNIPER — local rebuild
+# SNIPERS OG — local rebuild
 
 A standalone local username idea generator, watchlist, history and Discord webhook notifier.
 
@@ -7,7 +7,7 @@ A standalone local username idea generator, watchlist, history and Discord webho
 Requires Node.js 20 or newer.
 
 ```bash
-cd lazer-sniper-rebuild
+cd snipers-og-rebuild
 npm start
 ```
 

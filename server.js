@@ -35,7 +35,8 @@ app.get("/", (req, res) => {
     checker: "ready",
     checkIntervalMs: 2000,
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL),
-    discordCooldownRemainingMs: Math.max(0, discordCooldownUntil - Date.now())
+    discordCooldownRemainingMs: Math.max(0, discordCooldownUntil - Date.now()),
+    discordChecksPaused: Date.now() < discordCooldownUntil
   });
 });
 
@@ -87,12 +88,19 @@ app.post("/check", async (req, res) => {
       // Discord may return Retry-After in a header or retry_after in its JSON body.
       let body = {};
       try { body = await response.json(); } catch {}
-      const headerSeconds = Number(response.headers.get("retry-after"));
+      const retryHeader = response.headers.get("retry-after");
+      const headerNumber = Number(retryHeader);
+      const headerDateMs = retryHeader && !Number.isFinite(headerNumber)
+        ? Date.parse(retryHeader) - Date.now()
+        : 0;
       const bodySeconds = Number(body.retry_after);
-      const retrySeconds = Number.isFinite(headerSeconds) && headerSeconds > 0
-        ? headerSeconds
-        : (Number.isFinite(bodySeconds) && bodySeconds > 0 ? bodySeconds : 60);
-      const retryAfterMs = Math.max(1000, Math.ceil(retrySeconds * 1000));
+      const retryAfterMs = Math.max(1000, Math.ceil(
+        Number.isFinite(headerNumber) && headerNumber > 0
+          ? headerNumber * 1000
+          : (headerDateMs > 0
+            ? headerDateMs
+            : (Number.isFinite(bodySeconds) && bodySeconds > 0 ? bodySeconds * 1000 : 60000))
+      ));
       discordCooldownUntil = Math.max(discordCooldownUntil, Date.now() + retryAfterMs);
       return res.status(429).json({
         status: "RATE_LIMITED",

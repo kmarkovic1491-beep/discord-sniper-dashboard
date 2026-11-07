@@ -4,7 +4,7 @@ function cors(origin) {
   return {
     "Access-Control-Allow-Origin": origin === ALLOWED_ORIGIN ? ALLOWED_ORIGIN : "null",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Dashboard-Key",
+    "Access-Control-Allow-Headers": "Content-Type",
     "Vary": "Origin"
   };
 }
@@ -18,11 +18,8 @@ export default {
     if (request.method !== "POST" || new URL(request.url).pathname !== "/notify") {
       return Response.json({ error: "Not found" }, { status: 404, headers });
     }
-    if (!env.DISCORD_WEBHOOK_URL || !env.DASHBOARD_KEY) {
+    if (!env.DISCORD_WEBHOOK_URL) {
       return Response.json({ error: "Worker secrets are not configured." }, { status: 503, headers });
-    }
-    if (request.headers.get("X-Dashboard-Key") !== env.DASHBOARD_KEY) {
-      return Response.json({ error: "Invalid dashboard access key." }, { status: 401, headers });
     }
     let body;
     try { body = await request.json(); } catch {

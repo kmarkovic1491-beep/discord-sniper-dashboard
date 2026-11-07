@@ -1,201 +1,196 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Username Sniper</title>
+<title>Discord Username Dashboard</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090611;color:#f5edff;font-family:Arial,sans-serif;padding:20px}
-.container{max-width:850px;margin:auto}
-h1{color:#c58aff;text-align:center;font-size:34px}
-.subtitle{text-align:center;color:#a99ab9}
-.card{background:#171020;border:1px solid #482568;border-radius:16px;padding:20px;margin:18px 0}
-h2{color:#d5a5ff;margin-top:0}
-button{background:#8b35d6;color:white;border:0;border-radius:9px;padding:12px 17px;font-weight:bold;margin:5px;cursor:pointer}
-.stop{background:#a52d55}
-.secondary{background:#38264c}
-.username{font-size:36px;text-align:center;color:#d6a2ff;font-weight:bold;margin:20px}
-.status{text-align:center;font-weight:bold;font-size:18px;padding:12px}
-.available{color:#58f5a4}
-.taken{color:#ff6680}
-.unknown{color:#d5c2e9}
-input{background:#0d0913;color:white;border:1px solid #65418a;border-radius:8px;padding:12px;width:100%;margin:8px 0}
-li{padding:7px;color:#d9cce9}
-small{color:#a99ab9}
+body{margin:0;background:#100d19;color:#eee;font-family:Arial,sans-serif;padding:20px}
+main{max-width:650px;margin:auto}
+h1{color:#b69aff}
+.panel{background:#1d1829;border:1px solid #382d50;border-radius:14px;padding:18px;margin:14px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:bold;cursor:pointer;margin:5px}
+.start{background:#8b5cf6;color:white}
+.stop{background:#e05252;color:white}
+.secondary{background:#393047;color:white}
+input{width:100%;padding:12px;border-radius:8px;border:1px solid #55456e;background:#100d19;color:white;margin:8px 0}
+.status{font-weight:bold;color:#facc15}
+.good{color:#4ade80}
+.bad{color:#fb7185}
+li{padding:6px 0;overflow-wrap:anywhere}
+.small{color:#aaa;font-size:13px}
 </style>
 </head>
 <body>
-<div class="container">
-<h1>🎯 USERNAME SNIPER</h1>
-<p class="subtitle">Discord Username Availability Dashboard</p>
+<main>
+<h1>🎯 Discord Username Dashboard</h1>
+<p class="small">Automatic username checker</p>
 
-<div class="card">
-<h2>Dashboard</h2>
-<div class="username" id="username">---</div>
-<div class="status unknown" id="status">READY</div>
-<p style="text-align:center" id="message">Ready to start checking.</p>
-<div style="text-align:center">
-<button onclick="startSniping()">START CHECKING</button>
-<button class="stop" onclick="stopSniping()">STOP</button>
-<button class="secondary" onclick="checkOne()">CHECK ONE</button>
-</div>
+<div class="panel">
+  <h3>Checker status</h3>
+  <p id="status" class="status">CONNECTING...</p>
+  <p id="current">Waiting for first check...</p>
+  <button class="start" onclick="startSniping()">START</button>
+  <button class="stop" onclick="stopSniping()">STOP</button>
 </div>
 
-<div class="card">
-<h2>⚙️ Settings</h2>
-<label>Backend URL</label>
-<input id="backend" value="https://username-sniper-backend.onrender.com">
-<small>Backend connection</small>
+<div class="panel">
+  <h3>Settings</h3>
+  <label>Backend URL</label>
+  <input id="backend" value="https://username-sniper-backend.onrender.com">
+  <p class="small">Checks are limited by the backend to at least 2 seconds apart.</p>
 </div>
 
-<div class="card">
-<h2>⭐ Favourites</h2>
-<button class="secondary" onclick="saveFavourite()">SAVE CURRENT USERNAME</button>
-<ul id="favourites"></ul>
+<div class="panel">
+  <h3>Available usernames</h3>
+  <ul id="available"></ul>
 </div>
 
-<div class="card">
-<h2>📜 Recent History</h2>
-<ul id="history"></ul>
+<div class="panel">
+  <h3>Recent checks</h3>
+  <ul id="history"></ul>
 </div>
 
-<div class="card">
-<h2>🔔 Discord Alerts</h2>
-<p>Available usernames are sent through your private backend webhook.</p>
-<p id="alertStatus" class="unknown">Waiting for an available result.</p>
+<div class="panel">
+  <h3>Favourites</h3>
+  <ul id="favourites"></ul>
 </div>
-
-<p class="subtitle"><small>Unofficial availability checks. Results are not guaranteed. Checking stops if rate-limited.</small></p>
-</div>
+</main>
 
 <script>
-let current = "";
 let running = false;
 let checking = false;
-let historyItems = [];
 let favourites = [];
+let historyItems = [];
+let availableItems = [];
 
-const backendInput = document.getElementById("backend");
+const $ = id => document.getElementById(id);
 
-function backendURL(){
-  return backendInput.value.trim().replace(/\/+$/, "");
+function showStatus(message, color="status") {
+  $("status").textContent = message;
+  $("status").className = color;
 }
 
-function generateUsername(){
+function generateUsername() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let name = "";
   const length = Math.random() < 0.5 ? 3 : 4;
+  let name = "";
   for(let i=0;i<length;i++){
     name += chars[Math.floor(Math.random()*chars.length)];
   }
   return name;
 }
 
-function showStatus(text,type,message){
-  const status = document.getElementById("status");
-  status.textContent = text;
-  status.className = "status " + type;
-  document.getElementById("message").textContent = message;
+function addHistory(name, result) {
+  historyItems.unshift(name + " — " + result);
+  historyItems = historyItems.slice(0,20);
+  $("history").innerHTML = historyItems.map(x=>"<li>"+x+"</li>").join("");
 }
 
-async function checkOne(){
+function addAvailable(name) {
+  if(!availableItems.includes(name)){
+    availableItems.unshift(name);
+    $("available").innerHTML = availableItems.map(x=>"<li>"+x+
+      ' <button class="secondary" onclick="addFavourite(\''+x+'\')">♥ Save</button></li>'
+    ).join("");
+  }
+}
+
+function addFavourite(name) {
+  if(!favourites.includes(name)){
+    favourites.push(name);
+    $("favourites").innerHTML = favourites.map(x=>"<li>"+x+"</li>").join("");
+  }
+}
+
+async function checkOne() {
   if(checking) return;
   checking = true;
 
-  current = generateUsername();
-  document.getElementById("username").textContent = current;
-  showStatus("CHECKING...","unknown","Contacting checker...");
+  const name = generateUsername();
+  $("current").textContent = "Checking: " + name;
 
-  try{
-    const response = await fetch(backendURL()+"/check",{
+  try {
+    const base = $("backend").value.trim().replace(/\/$/,"");
+    const response = await fetch(base + "/check", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({username:current})
+      body:JSON.stringify({username:name})
     });
 
     const data = await response.json();
 
     if(response.status === 429 || data.status === "RATE_LIMITED"){
-      showStatus("RATE LIMITED","taken","Checking stopped. Try again later.");
+      addHistory(name,"RATE LIMITED");
+      showStatus("RATE LIMITED — STOPPED","bad");
       running = false;
       return;
     }
 
-    if(!response.ok) throw new Error(data.error || "Backend error");
-
-    const result = String(data.status || "").toUpperCase();
-
-    if(result === "AVAILABLE"){
-      showStatus("AVAILABLE ✓","available",current+" was reported available!");
-      document.getElementById("alertStatus").textContent = "Sending Discord alert...";
-      await sendAlert(current);
-    }else if(result === "TAKEN"){
-      showStatus("TAKEN ✕","taken",current+" is taken.");
-    }else{
-      showStatus(result || "UNKNOWN","unknown","No confirmed result.");
+    if(!response.ok){
+      throw new Error(data.error || "Request failed");
     }
 
-    historyItems.unshift(current+" — "+result);
-    historyItems = historyItems.slice(0,20);
-    renderHistory();
+    if(data.status === "AVAILABLE"){
+      addHistory(name,"AVAILABLE");
+      addAvailable(name);
+      $("current").textContent = name + " appears available!";
+    } else if(data.status === "TAKEN"){
+      addHistory(name,"TAKEN");
+    } else {
+      addHistory(name,data.status || "UNKNOWN");
+    }
 
-  }catch(error){
-    showStatus("ERROR","taken",error.message);
+  } catch(error) {
+    showStatus("ERROR: " + error.message,"bad");
     running = false;
-  }finally{
+  } finally {
     checking = false;
   }
 }
 
-async function sendAlert(username){
-  try{
-    const response = await fetch(backendURL()+"/notify",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({username})
-    });
-    const data = await response.json();
-    if(!response.ok) throw new Error(data.error || "Alert failed");
-    document.getElementById("alertStatus").textContent =
-      "Discord alert sent for "+username+"!";
-  }catch(error){
-    document.getElementById("alertStatus").textContent =
-      "Alert failed: "+error.message;
-  }
-}
-
-async function startSniping(){
+async function startSniping() {
   if(running) return;
+
   running = true;
-  showStatus("RUNNING","unknown","Checking one username at a time.");
+  showStatus("RUNNING","good");
 
   while(running){
     await checkOne();
+    if(running){
+      await new Promise(resolve=>setTimeout(resolve,2000));
+    }
   }
 }
 
-function stopSniping(){
+function stopSniping() {
   running = false;
-  showStatus("STOPPED","unknown","Checker stopped.");
+  showStatus("STOPPED");
+  $("current").textContent = "Checker stopped.";
 }
 
-function saveFavourite(){
-  if(!current || favourites.includes(current)) return;
-  favourites.unshift(current);
-  renderFavourites();
+async function connectBackend() {
+  try {
+    const base = $("backend").value.trim().replace(/\/$/,"");
+    const response = await fetch(base + "/");
+    if(!response.ok) throw new Error("Backend unavailable");
+    const data = await response.json();
+
+    if(data.status === "online"){
+      showStatus("CONNECTED","good");
+      startSniping();
+    } else {
+      showStatus("BACKEND NOT READY","bad");
+    }
+  } catch(error) {
+    showStatus("CONNECTION ERROR — " + error.message,"bad");
+  }
 }
 
-function renderFavourites(){
-  document.getElementById("favourites").innerHTML =
-    favourites.map(name=>"<li>"+name+"</li>").join("");
-}
-
-function renderHistory(){
-  document.getElementById("history").innerHTML =
-    historyItems.map(item=>"<li>"+item+"</li>").join("");
-}
+window.addEventListener("load", connectBackend);
 </script>
 </body>
 </html>

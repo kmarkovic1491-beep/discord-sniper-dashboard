@@ -34,7 +34,8 @@ app.get("/", (req, res) => {
     status: "online",
     checker: "ready",
     checkIntervalMs: 2000,
-    webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL)
+    webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL),
+    discordCooldownRemainingMs: Math.max(0, discordCooldownUntil - Date.now())
   });
 });
 
@@ -156,7 +157,7 @@ app.post("/test-webhook", async (req, res) => {
     if (!response.ok) {
       return res.status(502).json({
         success: false,
-        error: "Discord rejected the test message"
+        error: "Discord rejected the test message (HTTP " + response.status + ")"
       });
     }
 

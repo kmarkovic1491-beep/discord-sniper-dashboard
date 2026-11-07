@@ -17,7 +17,7 @@ const write = (file, value) => {
   fs.renameSync(tmp, file);
 };
 let state = read(stateFile, { targets: [], history: [] });
-let settings = read(settingsFile, { webhookUrl: "", enabled: false, alertAvailable: true, alertUnknown: false, message: "⚡ LAZER SNIPER: **{username}** was marked {status}. Verify it manually in Discord." });
+let settings = read(settingsFile, { webhookUrl: "", enabled: false, alertAvailable: true, alertUnknown: false, message: "⚡ SNIPERS OG: **{username}** was marked {status}. Verify it manually in Discord." });
 
 const json = (res, code, value) => {
   res.writeHead(code, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" });
@@ -58,7 +58,7 @@ async function sendWebhook(content) {
   if (!response.ok) throw new Error("Discord returned HTTP " + response.status + ".");
 }
 function renderMessage(name, status) {
-  return (settings.message || "LAZER SNIPER: {username} — {status}")
+  return (settings.message || "SNIPERS OG: {username} — {status}")
     .replaceAll("{username}", name).replaceAll("{status}", status);
 }
 const server = http.createServer(async (req, res) => {
@@ -80,7 +80,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, safeState());
     }
     if (req.method === "POST" && pathname === "/api/webhook/test") {
-      await sendWebhook("⚡ **LAZER SNIPER — test message**\nYour webhook connection is working. This is only a test.");
+      await sendWebhook("⚡ **SNIPERS OG — test message**\nYour webhook connection is working. This is only a test.");
       return json(res, 200, { sent: true });
     }
     if (req.method === "POST" && pathname === "/api/targets") {
@@ -129,4 +129,4 @@ const server = http.createServer(async (req, res) => {
     return json(res, 400, { error: error.message || "Request failed." });
   }
 });
-server.listen(Number(process.env.PORT || 3000), "127.0.0.1", () => console.log("LAZER SNIPER local app: http://localhost:" + (process.env.PORT || 3000)));
+server.listen(Number(process.env.PORT || 3000), "127.0.0.1", () => console.log("SNIPERS OG local app: http://localhost:" + (process.env.PORT || 3000)));

@@ -180,6 +180,8 @@ nav.dashboard-link a{display:inline-block;color:#fff;text-decoration:none;backgr
 const API = "https://username-sniper-backend.onrender.com";
 const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
 let currentName = "----";
+let checkCooldownUntil = 0;
+let cooldownInterval = null;
 let favorites = JSON.parse(localStorage.getItem("shinobiFavorites") || "[]");
 let history = JSON.parse(localStorage.getItem("shinobiHistory") || "[]");
 
@@ -273,7 +275,32 @@ async function testWebhook() {
   }
 }
 
+function startCheckCooldown(milliseconds) {
+  checkCooldownUntil = Date.now() + Math.max(1000, milliseconds || 60000);
+  const btn = document.getElementById("checkBtn");
+  const status = document.getElementById("checkStatus");
+  if (cooldownInterval) clearInterval(cooldownInterval);
+
+  const update = () => {
+    const seconds = Math.max(0, Math.ceil((checkCooldownUntil - Date.now()) / 1000));
+    if (seconds <= 0) {
+      clearInterval(cooldownInterval);
+      cooldownInterval = null;
+      btn.disabled = false;
+      btn.textContent = "Check Availability";
+      status.textContent = "Cooldown finished. You can try one check now.";
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = "Wait " + seconds + "s";
+    status.textContent = "⏳ Discord rate limit: checking is paused for " + seconds + " more seconds. Don't retry until the timer ends.";
+  };
+  update();
+  cooldownInterval = setInterval(update, 1000);
+}
+
 async function checkUsername() {
+  if (Date.now() < checkCooldownUntil) return;
   const input = document.getElementById("usernameInput");
   const btn = document.getElementById("checkBtn");
   const status = document.getElementById("checkStatus");
@@ -313,9 +340,9 @@ async function checkUsername() {
     } else if (data.status === "TAKEN") {
       status.textContent = "🔴 Taken: " + username;
       addHistory(username, "Taken");
-    } else if (data.status === "RATE_LIMITED") {
-      status.textContent = "⏳ Discord or server rate-limited this check. Wait before trying again.";
+    } else if (data.status === "RATE_LIMITED" || response.status === 429) {
       addHistory(username, "Rate limited");
+      startCheckCooldown(data.retryAfterMs || 60000);
     } else {
       status.textContent = "⚠️ Result unknown. Try again later.";
       addHistory(username, "Unknown");
@@ -323,7 +350,7 @@ async function checkUsername() {
   } catch {
     status.textContent = "⚠️ Could not reach the checker. Result unknown.";
   } finally {
-    btn.disabled = false;
+    if (Date.now() >= checkCooldownUntil) btn.disabled = false;
   }
 }
 

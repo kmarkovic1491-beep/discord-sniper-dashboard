@@ -42,6 +42,7 @@
 const $=id=>document.getElementById(id),read=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}},write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let targets=read('lazerTargets'),candidates=read('lazerCandidates'),availability=read('lazerAvailability');
 const checking=new Set();
+const isCooling=n=>Number(availability[n]?.retryAt||0)>Date.now();
 const API_BASE='https://username-sniper-backend.onrender.com';
 const valid=n=>/^[a-z0-9_.]{2,32}$/.test(n);
 function escapeText(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -67,14 +68,14 @@ $('openGenerator').onclick=()=>showPage('generator');$('generateBatch').onclick=
 $('filterTargets').oninput=renderTargets;
 document.addEventListener('click',e=>{const n=e.target.dataset.remove;if(n){targets=targets.filter(x=>x!==n);write('lazerTargets',targets);render()}const check=e.target.dataset.check;if(check)checkAvailability(check);const c=e.target.dataset.addcandidate;if(c)addTarget(c)});
 async function checkAvailability(name){
- if(checking.has(name))return;
+ if(checking.has(name)||isCooling(name))return;
  checking.add(name);renderTargets();
  try{
   const response=await fetch(API_BASE+'/api/check',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:name})});
   const data=await response.json();
   if(data.status==='AVAILABLE'||data.status==='TAKEN'){availability[name]={status:data.status,checkedAt:data.checkedAt||new Date().toISOString()};write('lazerAvailability',availability);}
-  else{availability[name]={status:'UNKNOWN'};write('lazerAvailability',availability);alert(data.message||'Discord could not verify this name. It remains UNKNOWN.');}
- }catch{availability[name]={status:'UNKNOWN'};write('lazerAvailability',availability);alert('Checker service is unavailable. The Render backend must deploy the latest code.');}
+  else{const limited=response.status===429||Boolean(data.retryAfterMs);availability[name]={status:limited?'RATE LIMITED':'UNKNOWN',message:data.message||'Discord could not verify this name.',retryAt:limited?Date.now()+Math.max(1000,Number(data.retryAfterMs)||60000):0};write('lazerAvailability',availability);}
+ }catch{availability[name]={status:'UNKNOWN',message:'Checker service is unavailable.'};write('lazerAvailability',availability);}
  finally{checking.delete(name);render();}
 }
 $('clearCandidates').onclick=()=>{if(confirm('Clear all generated candidates?')){candidates=[];write('lazerCandidates',candidates);render()}};

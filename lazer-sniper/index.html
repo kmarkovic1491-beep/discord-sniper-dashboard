@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b12"><title>LAZER SNIPER</title>
+<style>
+:root{color-scheme:dark;--bg:#090b12;--panel:#111622;--line:#222b3b;--muted:#8b96aa;--text:#edf2ff;--cyan:#55e6ff;--purple:#a78bfa;--green:#55e6a5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#1d2850 0,transparent 42%),var(--bg);color:var(--text);font:15px Inter,system-ui,-apple-system,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}.brand{font-weight:900;letter-spacing:2px;font-size:21px}.brand b{color:var(--cyan)}.pill{border:1px solid #285d53;color:var(--green);border-radius:30px;padding:7px 11px;font-size:12px}
+h1{font-size:clamp(27px,6vw,42px);margin:10px 0}.sub{color:var(--muted);max-width:650px;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:22px 0}.panel,.stat{background:linear-gradient(145deg,#151c2b,#0f1420);border:1px solid var(--line);border-radius:16px;padding:18px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:27px;margin-top:8px}.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.panel h2{font-size:16px;margin:0 0 14px}.inputrow{display:flex;gap:8px}input{min-width:0;flex:1;background:#090e18;border:1px solid #303a4d;border-radius:10px;padding:13px;color:white;font:inherit;outline:none}input:focus{border-color:var(--cyan)}button{border:0;border-radius:10px;padding:12px 15px;font-weight:800;background:var(--cyan);color:#061017;cursor:pointer}button.secondary{background:#242e42;color:#e8edfa}button.danger{background:#40232d;color:#ffb4c1}.hint{font-size:12px;color:var(--muted);line-height:1.55;margin-top:10px}.list{display:grid;gap:8px}.item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0b111c;border:1px solid #202b3b;padding:11px 12px;border-radius:10px}.name{font-weight:800;letter-spacing:1px}.tag{font-size:11px;color:#ffd58a;border:1px solid #6b5126;border-radius:20px;padding:4px 7px}.empty{color:var(--muted);padding:16px 0}.actions{display:flex;gap:7px;align-items:center}.actions button{padding:7px 9px;font-size:12px}.wide{margin-top:14px}.notice{border-left:3px solid var(--purple);padding:10px 12px;background:#17162a;border-radius:7px;color:#c9c4ee;font-size:12px;line-height:1.55;margin-top:14px}footer{text-align:center;color:#69758a;font-size:12px;padding:24px}
+@media(max-width:720px){.wrap{padding:16px}.grid{grid-template-columns:1fr 1fr}.layout{grid-template-columns:1fr}.top{align-items:flex-start}.stat:last-child{grid-column:span 2}.inputrow{flex-wrap:wrap}.inputrow input{flex-basis:100%}.inputrow button{flex:1}}
+</style></head>
+<body><main class="wrap">
+<header class="top"><div class="brand">⚡ LAZER <b>SNIPER</b></div><div class="pill">● LOCAL DASHBOARD</div></header>
+<section><div style="color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:2px">USERNAME CONTROL CENTER</div><h1>Track the names<br>you want.</h1><p class="sub">Keep a clean watchlist, generate candidates, and organize your targets from your phone. Availability is never guessed: unverified names stay UNKNOWN.</p></section>
+<section class="grid"><div class="stat"><small>WATCHLIST</small><strong id="count">0</strong></div><div class="stat"><small>SAVED CANDIDATES</small><strong id="saved">0</strong></div><div class="stat"><small>CHECK STATUS</small><strong style="font-size:18px;color:#ffd58a">MANUAL</strong></div></section>
+<section class="layout">
+<div class="panel"><h2>＋ Add a target username</h2><div class="inputrow"><input id="target" maxlength="32" placeholder="Type a username…" autocomplete="off"><button id="add">Add target</button></div><p class="hint">Targets are saved in this browser on your device. Add names you want to keep an eye on.</p><div class="wide"><h2>Your watchlist</h2><div id="watch" class="list"><div class="empty">No targets yet. Add one above.</div></div></div></div>
+<div class="panel"><h2>⚡ Candidate generator</h2><div class="inputrow"><input id="prefix" maxlength="8" placeholder="Optional prefix"><button id="generate">Generate</button></div><p class="hint">Creates a small local batch of random 4-character candidates. It does not contact Discord.</p><div id="candidates" class="list"><div class="empty">Your generated candidates will appear here.</div></div><button class="secondary wide" id="clear" style="width:100%">Clear candidates</button><div class="notice">Discord availability checks can be rate-limited or blocked. This starter version does not automate account actions, claim names, or bypass Discord protections.</div></div>
+</section>
+<footer>LAZER SNIPER · Your lists stay in this browser</footer></main>
+<script>
+const $=id=>document.getElementById(id), read=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]}}, write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+let targets=read('lazerTargets'), candidates=read('lazerCandidates');
+function render(){ $('count').textContent=targets.length;$('saved').textContent=candidates.length;
+$('watch').innerHTML=targets.length?targets.map((n,i)=>'<div class="item"><span class="name"></span><span class="actions"><span class="tag">UNKNOWN</span><button class="danger" data-del="'+i+'">Remove</button></span></div>').join(''):'<div class="empty">No targets yet. Add one above.</div>';
+[...$('watch').querySelectorAll('.name')].forEach((el,i)=>el.textContent=targets[i]);
+$('candidates').innerHTML=candidates.length?candidates.slice(0,12).map(n=>'<div class="item"><span class="name"></span><span class="tag">LOCAL</span></div>').join(''):'<div class="empty">Your generated candidates will appear here.</div>';
+[...$('candidates').querySelectorAll('.name')].forEach((el,i)=>el.textContent=candidates[i]);}
+function add(){let n=$('target').value.trim().toLowerCase();if(!/^[a-z0-9_.]{2,32}$/.test(n)){alert('Use 2–32 letters, numbers, underscores or dots.');return}if(targets.includes(n)){alert('Already in your watchlist.');return}targets.unshift(n);write('lazerTargets',targets);$('target').value='';render()}
+$('add').onclick=add;$('target').addEventListener('keydown',e=>{if(e.key==='Enter')add()});
+$('watch').onclick=e=>{let i=e.target.dataset.del;if(i!==undefined){targets.splice(+i,1);write('lazerTargets',targets);render()}};
+$('generate').onclick=()=>{let chars='abcdefghijklmnopqrstuvwxyz0123456789',p=$('prefix').value.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,2),set=new Set(candidates);while(set.size<candidates.length+20){let s=p;while(s.length<4)s+=chars[Math.floor(Math.random()*chars.length)];set.add(s)}candidates=[...set].slice(-200);write('lazerCandidates',candidates);render()};
+$('clear').onclick=()=>{candidates=[];write('lazerCandidates',candidates);render()};render();
+</script></body></html>

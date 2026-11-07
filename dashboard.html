@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090b13">
+<title>SHINOBI | Control Dashboard</title>
+<style>
+:root{--orange:#ff762e;--panel:rgba(13,16,26,.88);--line:rgba(255,255,255,.13);--muted:#aeb6c6}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#252033 0,#090b13 58%);color:#fff;font-family:Arial,sans-serif}
+header{text-align:center;padding:26px 16px 20px;border-bottom:1px solid var(--line);background:#0005}
+h1{margin:0;color:var(--orange);letter-spacing:5px;font-size:clamp(30px,7vw,48px)}
+header p{color:var(--muted);margin:8px 0 14px}
+nav a{display:inline-block;color:#fff;text-decoration:none;background:#303747;border:1px solid var(--line);padding:10px 14px;border-radius:9px;margin:4px}
+nav a.active{background:var(--orange);color:#170d08;font-weight:bold}
+main{width:min(1050px,94%);margin:24px auto 50px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:19px;margin-bottom:16px;box-shadow:0 10px 30px #0005}
+h2{margin:0 0 14px;color:var(--orange);font-size:19px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.metric{background:#ffffff0b;border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.metric small{display:block;color:var(--muted);font-size:12px;margin-bottom:8px}
+.metric strong{font-size:25px;overflow-wrap:anywhere}
+.status{font-size:14px;color:#ffd0a8;line-height:1.5}
+.muted{color:var(--muted);font-size:13px;line-height:1.5}
+button{border:0;border-radius:9px;padding:12px 15px;background:var(--orange);color:#170d08;font-weight:bold;font-size:14px;margin:4px 4px 4px 0}
+button.secondary{background:#303747;color:#fff;border:1px solid var(--line)}
+ul{padding-left:20px;margin:8px 0;color:#e5e8ef;line-height:1.9;overflow-wrap:anywhere}
+.empty{color:var(--muted);font-size:14px}
+footer{text-align:center;color:#8992a4;padding:18px;font-size:12px}
+@media(min-width:650px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header>
+<h1>SHINOBI</h1>
+<p>CONTROL CENTER · LIVE SERVICE OVERVIEW</p>
+<nav>
+<a href="./index.html">Username Hunter</a>
+<a class="active" href="./dashboard.html">Dashboard</a>
+</nav>
+</header>
+<main>
+<section class="panel">
+<h2>⚡ System overview</h2>
+<div class="grid">
+<div class="metric"><small>BACKEND</small><strong id="backend">Checking…</strong></div>
+<div class="metric"><small>WEBHOOK SETUP</small><strong id="webhook">Checking…</strong></div>
+<div class="metric"><small>SAVED FAVOURITES</small><strong id="favCount">0</strong></div>
+<div class="metric"><small>RECENT CHECK RECORDS</small><strong id="checkCount">0</strong></div>
+</div>
+<p id="updated" class="status">Connecting to the Render service…</p>
+<button id="refresh" onclick="refreshDashboard()">↻ Refresh status</button>
+</section>
+<section class="panel">
+<h2>📜 Recent activity</h2>
+<div id="activity" class="empty">No local check history found yet.</div>
+<p class="muted">Activity and favourites are read from this browser's local storage. They are not uploaded to a server and may differ between devices or browsers.</p>
+</section>
+<section class="panel">
+<h2>🛡️ Service notes</h2>
+<ul>
+<li>Backend status confirms the Render app responds; it does not confirm Discord username checks are working.</li>
+<li>Discord can rate-limit or reject availability checks. A limited or failed check must be treated as UNKNOWN.</li>
+<li>Webhook configuration is reported by the backend only. Use the Hunter page's Test Webhook button to test delivery.</li>
+<li>This dashboard does not run background checks or bulk requests.</li>
+</ul>
+</section>
+<section class="panel">
+<h2>🔗 Quick links</h2>
+<p><a href="./index.html" style="color:#ff9a63">Open Username Hunter</a></p>
+<p><a href="https://dashboard.render.com/" target="_blank" rel="noopener" style="color:#ff9a63">Open Render service dashboard</a></p>
+<p><a href="https://github.com/kmarkovic1491-beep/discord-sniper-dashboard/actions" target="_blank" rel="noopener" style="color:#ff9a63">View GitHub deployment status</a></p>
+</section>
+</main>
+<footer>SHINOBI CONTROL DASHBOARD · Manual checks only</footer>
+<script>
+const API="https://username-sniper-backend.onrender.com";
+function readList(key){try{const v=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(v)?v:[]}catch{return[]}}
+function renderLocal(){
+ const favs=readList("shinobiFavorites"), history=readList("shinobiHistory");
+ document.getElementById("favCount").textContent=favs.length;
+ document.getElementById("checkCount").textContent=history.length;
+ const box=document.getElementById("activity");
+ if(!history.length){box.className="empty";box.textContent="No local check history found yet.";return}
+ box.className="";
+ const list=document.createElement("ul");
+ history.slice(0,12).forEach(item=>{const li=document.createElement("li");li.textContent=(item.name||"Unknown")+" — "+(item.status||"No status");list.appendChild(li)});
+ box.replaceChildren(list);
+}
+async function refreshDashboard(){
+ const btn=document.getElementById("refresh"), backend=document.getElementById("backend"), webhook=document.getElementById("webhook"), updated=document.getElementById("updated");
+ btn.disabled=true;backend.textContent="Checking…";webhook.textContent="Checking…";updated.textContent="Contacting Render…";
+ renderLocal();
+ try{
+  const response=await fetch(API+"/",{cache:"no-store"});
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  const data=await response.json();
+  backend.textContent=data.status==="online"?"ONLINE":"RESPONDING";
+  webhook.textContent=data.webhookConfigured===true?"CONFIGURED":data.webhookConfigured===false?"NOT SET":"UNKNOWN";
+  updated.textContent="Last refreshed: "+new Date().toLocaleString();
+ }catch(error){
+  backend.textContent="OFFLINE";
+  webhook.textContent="UNKNOWN";
+  updated.textContent="Could not read backend status ("+error.message+").";
+ }finally{btn.disabled=false}
+}
+refreshDashboard();
+</script>
+</body>
+</html>

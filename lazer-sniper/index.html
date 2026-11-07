@@ -20,10 +20,10 @@
 <button data-page="generator"><span class="ico">✳</span>Generator</button>
 <button data-page="settings"><span class="ico">⚙</span>Settings</button>
 </nav></div>
-<div class="side-bottom"><div class="statusbox"><span class="dot"></span><b>Local mode active</b><br>Your lists are saved in this browser. Discord checks are not running.</div></div>
+<div class="side-bottom"><div class="statusbox" id="backendStatus"><span class="dot" style="background:var(--amber)"></span><b>Connecting to checker…</b><br>Checking backend status.</div></div>
 </aside>
 <main class="main">
-<header class="topbar"><div class="mobilebrand">⚡ LAZER <span>SNIPER</span></div><div class="crumb">Workspace&nbsp; / &nbsp;<span id="crumb">Overview</span></div><div class="top-right"><span class="localtag">● CHECKER READY</span></div></header>
+<header class="topbar"><div class="mobilebrand">⚡ LAZER <span>SNIPER</span></div><div class="crumb">Workspace&nbsp; / &nbsp;<span id="crumb">Overview</span></div><div class="top-right"><span class="localtag" id="checkerStatus" style="border-color:#67512f;color:var(--amber)">● CONNECTING…</span></div></header>
 <section class="section active" id="page-overview">
 <div class="eyebrow">USERNAME CONTROL CENTER</div><h1>Stay ready for your next name.</h1><p class="lead">Organize username targets, generate ideas, and keep everything in one place. Check username availability and organize your targets. Results Discord cannot verify stay marked UNKNOWN.</p>
 <div class="stats"><div class="stat"><label>WATCHLIST</label><strong id="statTargets">0</strong><small>Names you're tracking</small></div><div class="stat"><label>CANDIDATES</label><strong id="statCandidates">0</strong><small>Locally generated ideas</small></div><div class="stat"><label>AVAILABILITY</label><strong style="font-size:18px;color:var(--amber)">LIVE CHECK</strong><small>Best-effort Discord check</small></div></div>
@@ -44,6 +44,21 @@ let targets=read('lazerTargets'),candidates=read('lazerCandidates'),availability
 const checking=new Set();
 const isCooling=n=>Number(availability[n]?.retryAt||0)>Date.now();
 const API_BASE='https://username-sniper-backend.onrender.com';
+async function refreshBackendStatus(){
+ const side=$('backendStatus'),tag=$('checkerStatus');
+ try{
+  const response=await fetch(API_BASE+'/api/status',{cache:'no-store'});
+  if(!response.ok)throw new Error('Backend unavailable');
+  const data=await response.json();
+  if(!data.online)throw new Error('Backend offline');
+  if(tag){tag.textContent='● CHECKER ONLINE · BEST EFFORT';tag.style.borderColor='#31534e';tag.style.color='var(--green)';}
+  if(side){side.innerHTML='<span class="dot"></span><b>Checker backend online</b><br>Availability checks are best-effort. Discord can still rate-limit requests.';}
+ }catch{
+  if(tag){tag.textContent='● BACKEND OFFLINE';tag.style.borderColor='#6b3442';tag.style.color='var(--red)';}
+  if(side){side.innerHTML='<span class="dot" style="background:var(--red)"></span><b>Checker backend unavailable</b><br>Availability checks will work again when the service is online.';}
+ }
+}
+
 const valid=n=>/^[a-z0-9_.]{2,32}$/.test(n);
 function escapeText(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function addTarget(value){const n=(value||'').trim().toLowerCase();if(!valid(n)){alert('Use 2–32 letters, numbers, underscores or dots.');return false}if(targets.includes(n)){alert('That username is already on your watchlist.');return false}targets.unshift(n);write('lazerTargets',targets);render();return true}
@@ -99,5 +114,6 @@ $('testWebhook').onclick=async()=>{
 };
 $('resetData').onclick=()=>{if(confirm('Delete all LAZER SNIPER data saved in this browser?')){targets=[];candidates=[];write('lazerTargets',targets);write('lazerCandidates',candidates);render()}};
 render();
+refreshBackendStatus();
 </script>
 </body></html>

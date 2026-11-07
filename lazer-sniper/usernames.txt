@@ -1,0 +1,1 @@
+; Add one username per line. This file contains names only, never account tokens or passwords.\n

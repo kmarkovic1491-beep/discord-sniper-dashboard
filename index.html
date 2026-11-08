@@ -609,7 +609,7 @@ function renderTutorial(){
 }
 function openTutorial(){const backdrop=$("tutorialBackdrop");backdrop.classList.remove("closing","opening");renderTutorial();backdrop.classList.add("open");void backdrop.offsetWidth;backdrop.classList.add("opening");setTimeout(()=>backdrop.classList.remove("opening"),760)}
 function closeTutorial(markSeen=true){const backdrop=$("tutorialBackdrop");if(backdrop.classList.contains("open")){backdrop.classList.remove("opening");backdrop.classList.add("closing");setTimeout(()=>{backdrop.classList.remove("open","closing")},380)}if(markSeen){try{localStorage.setItem("snipers-og-discord-tutorial-seen-v2","1")}catch(e){}}}
-function openTutorialSection(){const section=tutorialSteps[tutorialIndex].section;if(tutorialIndex<tutorialSteps.length-1)tutorialIndex++;closeTutorial(false);setTimeout(()=>show(section,true),400);setTimeout(()=>openTutorial(),3000)}
+function openTutorialSection(){const section=tutorialSteps[tutorialIndex].section;if(tutorialIndex<tutorialSteps.length-1)tutorialIndex++;closeTutorial(false);setTimeout(()=>show(section,true),400);setTimeout(()=>openTutorial(),5000)}
 $("tutorialNext").addEventListener("click",()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()});
 $("tutorialBack").addEventListener("click",()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}});
 $("tutorialSkip").addEventListener("click",()=>closeTutorial());
@@ -698,7 +698,7 @@ async function initializeDiscordAuth(){
   const loginCopy=$("discordLoginBackdrop").querySelector("p");
   if(loginCopy)loginCopy.textContent="Discord connected. Getting SNIPERS OG ready for you.";
   $("discordLoginStatus").textContent="Checking your session · loading your workspace…";
-  await new Promise(resolve=>setTimeout(resolve,3000));
+  await new Promise(resolve=>setTimeout(resolve,5000));
   $("discordLoginBackdrop").classList.remove("welcome-loading");
   void $("discordLoginBackdrop").offsetWidth;
   $("discordLoginBackdrop").classList.add("welcome-exit");

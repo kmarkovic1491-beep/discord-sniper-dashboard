@@ -260,12 +260,12 @@ app.get("/api/check", async (req, res) => {
   }
 });
 
-// Bulk lookups are capped at 2 names per actor run to keep cost and rate exposure low.
+// Bulk lookups are capped at 25 names per actor run to scan watchlists in batches.
 app.post("/api/check-bulk", async (req, res) => {
   const input = req.body?.usernames;
-  if (!Array.isArray(input) || input.length < 1 || input.length > 2 ||
+  if (!Array.isArray(input) || input.length < 1 || input.length > 25 ||
       input.some(name => typeof name !== "string" || !/^[a-z0-9._]{2,32}$/i.test(name.trim()))) {
-    return res.status(400).json({ error: "FeedMiner integration currently accepts a maximum of 2 usernames per batch." });
+    return res.status(400).json({ error: "FeedMiner integration currently accepts a maximum of 25 usernames per batch." });
   }
   const usernames = [...new Set(input.map(name => name.trim().toLowerCase()))];
   const results = [];

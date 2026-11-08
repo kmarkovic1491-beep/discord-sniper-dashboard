@@ -270,7 +270,7 @@ app.post("/api/check-bulk", async (req, res) => {
           "Authorization": "Bearer " + process.env.APIFY_TOKEN,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ usernames }),
+        body: JSON.stringify({\n          usernames,\n          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }\n        }),
         signal: AbortSignal.timeout(60000)
       }
     );
@@ -334,7 +334,7 @@ app.post("/api/check", async (req, res) => {
           "Authorization": "Bearer " + process.env.APIFY_TOKEN,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ usernames: [username] }),
+        body: JSON.stringify({\n          usernames: [username],\n          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }\n        }),
         signal: AbortSignal.timeout(60000)
       }
     );

@@ -18,7 +18,7 @@ app.use((req, res, next) => {
 
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
@@ -33,6 +33,100 @@ app.get("/", (req, res) => {
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL),
   });
 });
+
+
+/* SNIPERS_DISCORD_OAUTH_V1 — OAuth identity only; never accepts Discord passwords. */
+const crypto = require("crypto");
+const FRONTEND_URL = "https://kmarkovic1491-beep.github.io/discord-sniper-dashboard/";
+const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
+function b64url(value) { return Buffer.from(value).toString("base64url"); }
+function signSession(payload) {
+  const body = b64url(JSON.stringify(payload));
+  const sig = crypto.createHmac("sha256", process.env.DISCORD_SESSION_SECRET).update(body).digest("base64url");
+  return body + "." + sig;
+}
+function verifySession(token) {
+  if (!process.env.DISCORD_SESSION_SECRET || typeof token !== "string") return null;
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const expected = crypto.createHmac("sha256", process.env.DISCORD_SESSION_SECRET).update(parts[0]).digest();
+  let actual;
+  try { actual = Buffer.from(parts[1], "base64url"); } catch { return null; }
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
+    if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000) || !payload.sub) return null;
+    return payload;
+  } catch { return null; }
+}
+function readCookie(req, name) {
+  const raw = String(req.headers.cookie || "");
+  for (const part of raw.split(";")) {
+    const index = part.indexOf("=");
+    if (index > 0 && part.slice(0, index).trim() === name) return decodeURIComponent(part.slice(index + 1).trim());
+  }
+  return "";
+}
+function clearOAuthState(res) {
+  res.setHeader("Set-Cookie", "snipers_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
+}
+app.get("/auth/config", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI && process.env.DISCORD_SESSION_SECRET) });
+});
+app.get("/auth/discord", (req, res) => {
+  const { DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, DISCORD_CLIENT_SECRET, DISCORD_SESSION_SECRET } = process.env;
+  if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET || !DISCORD_REDIRECT_URI || !DISCORD_SESSION_SECRET) {
+    return res.status(503).send("Discord sign-in is not configured. Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI and DISCORD_SESSION_SECRET on the Render backend.");
+  }
+  const state = crypto.randomBytes(32).toString("hex");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Set-Cookie", "snipers_oauth_state=" + state + "; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600");
+  const params = new URLSearchParams({ client_id: DISCORD_CLIENT_ID, response_type: "code", redirect_uri: DISCORD_REDIRECT_URI, scope: "identify", state, prompt: "consent" });
+  return res.redirect("https://discord.com/oauth2/authorize?" + params.toString());
+});
+app.get("/auth/discord/callback", async (req, res) => {
+  const state = String(req.query.state || "");
+  const savedState = readCookie(req, "snipers_oauth_state");
+  clearOAuthState(res);
+  if (!state || !savedState || state.length !== savedState.length || !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(savedState))) {
+    return res.status(400).send("Discord sign-in could not be verified. Close this page and try again.");
+  }
+  if (req.query.error || !req.query.code) return res.redirect(FRONTEND_URL + "?discord_login=cancelled");
+  const { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, DISCORD_SESSION_SECRET } = process.env;
+  if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET || !DISCORD_REDIRECT_URI || !DISCORD_SESSION_SECRET) return res.status(503).send("Discord OAuth is not configured on the backend.");
+  try {
+    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ client_id: DISCORD_CLIENT_ID, client_secret: DISCORD_CLIENT_SECRET, grant_type: "authorization_code", code: String(req.query.code), redirect_uri: DISCORD_REDIRECT_URI }),
+      signal: AbortSignal.timeout(15000)
+    });
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok || !tokenData.access_token) return res.status(502).send("Discord did not complete sign-in. Please return to the dashboard and try again.");
+    const userResponse = await fetch("https://discord.com/api/users/@me", {
+      headers: { Authorization: "Bearer " + tokenData.access_token },
+      signal: AbortSignal.timeout(15000)
+    });
+    const user = await userResponse.json();
+    if (!userResponse.ok || !user.id) return res.status(502).send("Could not read your Discord profile.");
+    const session = signSession({ sub: String(user.id), username: String(user.username || ""), global_name: String(user.global_name || ""), avatar: user.avatar || null, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS });
+    res.setHeader("Cache-Control", "no-store");
+    return res.redirect(FRONTEND_URL + "#discord_session=" + encodeURIComponent(session));
+  } catch (error) {
+    console.error("Discord OAuth callback failed:", error.message);
+    return res.status(502).send("Discord sign-in failed. Please try again.");
+  }
+});
+app.get("/auth/me", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const auth = String(req.headers.authorization || "");
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const user = verifySession(token);
+  if (!user) return res.status(401).json({ authenticated: false });
+  return res.json({ authenticated: true, user: { id: user.sub, username: user.username, global_name: user.global_name, avatar: user.avatar }, expiresAt: user.exp });
+});
+app.post("/auth/logout", (req, res) => res.json({ success: true }));
 
 // Test the configured webhook
 app.post("/test-webhook", async (req, res) => {

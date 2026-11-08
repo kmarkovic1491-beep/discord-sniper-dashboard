@@ -58,26 +58,40 @@ function change(n,s){const t=state.targets.find(x=>x.name===n);if(!t)return;cons
 function show(n){document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id==="section-"+n));document.querySelectorAll("[data-section]").forEach(x=>x.classList.toggle("active",x.dataset.section===n));$("crumb").textContent=n.toUpperCase();window.scrollTo(0,0)}
 function copyCandidate(value){let copied=false;try{const area=document.createElement("textarea");area.value=value;area.setAttribute("readonly","");area.style.position="fixed";area.style.opacity="0";area.style.left="-9999px";document.body.appendChild(area);area.select();area.setSelectionRange(0,area.value.length);copied=document.execCommand("copy");area.remove()}catch(err){}if(!copied&&navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(value).then(()=>toast("Copied "+value+" — paste it into Discord search.")).catch(()=>toast("Could not copy automatically. Username: "+value))}else if(copied){toast("Copied "+value+" — paste it into Discord search.")}else{toast("Could not copy automatically. Username: "+value)}}
 let activeCheck=false;
+let discordCheckCooldownUntil=0;
 async function checkTargetViaApi(next,silent=false){
  if(activeCheck)return false;
+ const remaining=discordCheckCooldownUntil-Date.now();
+ if(remaining>0){toast("Discord cooldown active. Try again in "+Math.ceil(remaining/1000)+" seconds.");return false}
  activeCheck=true;
  const btn=document.querySelector("[data-next-check]");
  if(btn){btn.disabled=true;btn.textContent="CHECKING…"}
  if(!silent)toast("Checking "+next.name+" with the experimental endpoint…");
- let succeeded=false;
+ let succeeded=false,response=null,data={};
  try{
-  const response=await fetch("https://discord.com/api/v9/unique-username/username-attempt-unauthed",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:next.name})});
-  let data={};try{data=await response.json()}catch(e){}
+  response=await fetch("https://discord.com/api/v9/unique-username/username-attempt-unauthed",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:next.name})});
+  try{data=await response.json()}catch(e){}
   if(!response.ok)throw Error("Endpoint returned HTTP "+response.status+(response.status===429?" (rate limited)":""));
   if(typeof data.taken!=="boolean")throw Error("Unexpected response; no reliable result returned.");
   const stamp=new Date().toLocaleString();
-  next.status=data.taken?"TAKEN":"AVAILABLE";next.updated=stamp;
+  next.status=data.taken?"TAKEN":"AVAILABLE";next.updated=stamp;delete next.checkError;
   if(data.taken){delete next.verifiedAt}else{next.verifiedAt="Experimental Discord endpoint · "+stamp}
   state.history.unshift({name:next.name,status:next.status,date:stamp+" · experimental API"});
   save();render();succeeded=true;
   if(!silent)toast(next.name+" reported "+next.status+" by experimental endpoint.");
   if(!data.taken&&state.discordWebhook)alertDiscord(next.name,"AVAILABLE",false).then(()=>toast(next.name+" reported AVAILABLE · alert sent.")).catch(e=>toast("Result saved; webhook failed: "+e.message));
- }catch(err){next.checkError=String(err&&err.message||"Request failed").slice(0,180);next.updated=new Date().toLocaleString();save();render();toast("CHECK FAILED for "+next.name+": "+next.checkError+". Still UNKNOWN — verify manually.");}
+ }catch(err){
+  if(response&&response.status===429){
+   const retrySeconds=Number(data.retry_after)||Number(response.headers.get("Retry-After"))||60;
+   discordCheckCooldownUntil=Date.now()+Math.max(1,retrySeconds)*1000;
+   next.checkError="Discord rate limit. Paused for "+Math.ceil(retrySeconds)+" seconds.";
+   toast("Discord rate limited the checker. Auto-check will wait "+Math.ceil(retrySeconds)+" seconds.");
+  }else{
+   next.checkError=String(err&&err.message||"Request failed").slice(0,180);
+   toast("CHECK FAILED for "+next.name+": "+next.checkError+". Still UNKNOWN — verify manually.");
+  }
+  next.updated=new Date().toLocaleString();save();render();
+ }
  finally{activeCheck=false;if(btn){btn.disabled=false;btn.textContent="◉ CHECK NEXT UNKNOWN NAME ↗"}}
  return succeeded;
 }
@@ -96,7 +110,14 @@ function runBulkAutoCheck(){
  bulkAutoRunning=true;
  checkTargetViaApi(target,true).then(ok=>{
   bulkAutoRunning=false;
-  if(!ok){bulkAutoQueue=[];return}
+  if(!ok){
+   if(discordCheckCooldownUntil>Date.now()&&bulkAutoQueue.length){
+    const wait=discordCheckCooldownUntil-Date.now()+1000;
+    toast("Bulk auto-check paused for Discord cooldown; it will resume in about "+Math.ceil(wait/1000)+" seconds.");
+    bulkAutoTimer=setTimeout(runBulkAutoCheck,wait);
+   }else{bulkAutoQueue=[]}
+   return;
+  }
   bulkAutoChecks++;
   if(bulkAutoChecks<BULK_AUTO_LIMIT&&bulkAutoQueue.length){
    toast("Bulk auto-check: "+bulkAutoChecks+"/"+BULK_AUTO_LIMIT+" checked. Next check in 3 seconds.");

@@ -368,20 +368,20 @@ app.get("/api/check", async (req, res) => {
   const username = String(req.query?.username || "").trim().toLowerCase();
   if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid Discord username." });
   try {
-    const status = await checkWithPomelo(username);
+    const status = await checkWithFeedMiner(username);
     return res.json({ username, status, provider: "FeedMiner" });
   } catch (error) {
-    console.error("Pomelo check failed:", error.message);
-    return res.status(error.statusCode || 502).json({ error: error.message, provider: "Pomelo V2" });
+    console.error("FeedMiner check failed:", error.message);
+    return res.status(error.statusCode || 502).json({ error: error.message, provider: "FeedMiner" });
   }
 });
 
-// Bulk lookups are intentionally capped at 2 names to honor Pomelo's free tier.
+// Bulk lookups are capped at 2 names per actor run to keep cost and rate exposure low.
 app.post("/api/check-bulk", async (req, res) => {
   const input = req.body?.usernames;
   if (!Array.isArray(input) || input.length < 1 || input.length > 2 ||
       input.some(name => typeof name !== "string" || !/^[a-z0-9._]{2,32}$/i.test(name.trim()))) {
-    return res.status(400).json({ error: "Pomelo free tier supports a maximum of 2 usernames per batch." });
+    return res.status(400).json({ error: "FeedMiner integration currently accepts a maximum of 2 usernames per batch." });
   }
   const usernames = [...new Set(input.map(name => name.trim().toLowerCase()))];
   const results = [];

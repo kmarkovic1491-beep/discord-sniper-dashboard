@@ -156,7 +156,7 @@ async function runFeedMinerBatch(usernames) {
     throw Object.assign(new Error("FeedMiner is not configured yet. Add APIFY_API_TOKEN to the Render service environment."), { statusCode: 503 });
   }
   const task = feedMinerQueue.then(async () => {
-    const waitMs = Math.max(0, 5000 - (Date.now() - lastFeedMinerStart));
+    const waitMs = Math.max(0, 10000 - (Date.now() - lastFeedMinerStart));
     if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
     lastFeedMinerStart = Date.now();
     const response = await fetch("https://api.apify.com/v2/acts/" + FEEDMINER_ACTOR_ID + "/run-sync-get-dataset-items", {
@@ -175,7 +175,9 @@ async function runFeedMinerBatch(usernames) {
     if (!response.ok) {
       const detail = String(rows?.error?.message || rows?.error || rows?.message || raw || response.statusText).slice(0, 240);
       const limited = response.status === 429 || /rate.?limit|too many requests|temporarily blocked/i.test(detail);
-      throw Object.assign(new Error("FeedMiner request failed (HTTP " + response.status + "): " + detail), { statusCode: limited ? 429 : 502 });
+      const retryHeader = Number(response.headers.get("retry-after"));
+      const retryAfterMs = limited ? Math.max(30000, Number.isFinite(retryHeader) && retryHeader > 0 ? retryHeader * 1000 : 0) : 0;
+      throw Object.assign(new Error("FeedMiner request failed (HTTP " + response.status + "): " + detail), { statusCode: limited ? 429 : 502, retryAfterMs });
     }
     if (!Array.isArray(rows)) throw Object.assign(new Error("FeedMiner did not return a dataset array."), { statusCode: 502 });
     const normalized = new Map();
@@ -189,7 +191,7 @@ async function runFeedMinerBatch(usernames) {
     if (missing.length) {
       const unchecked = rows.filter(row => row && typeof row.username === "string" && missing.includes(row.username.trim().toLowerCase()));
       const reason = unchecked.map(row => String(row.reason || row.reason_code || "")).filter(Boolean).join("; ");
-      throw Object.assign(new Error("FeedMiner did not verify: " + missing.join(", ") + (reason ? " (" + reason.slice(0, 180) + ")" : "") + ". No availability result was recorded."), { statusCode: 503 });
+      throw Object.assign(new Error("FeedMiner could not confirm: " + missing.join(", ") + (reason ? " (" + reason.slice(0, 180) + ")" : "") + ". These names remain queued for retry; no availability result was recorded."), { statusCode: 429, retryAfterMs: 30000 });
     }
     for (const [name, status] of normalized) feedMinerCache.set(name, { status, expiresAt: Date.now() + 15000 });
     return usernames.map(username => ({ username, status: normalized.get(username) }));
@@ -273,7 +275,7 @@ app.post("/api/check-bulk", async (req, res) => {
     return res.json({ results, checked: results.length, total: usernames.length });
   } catch (error) {
     console.error("FeedMiner bulk check failed:", error.message);
-    return res.status(error.statusCode || 502).json({ error: error.message, results });
+    return res.status(error.statusCode || 502).json({ error: error.message, retryAfterMs: error.retryAfterMs || 0, results });
   }
 });
 

@@ -141,6 +141,22 @@ app.post("/notify", async (req, res) => {
 });
 
 
+// TEMPORARY one-shot Pomelo API schema test; remove after verification.
+app.get("/__pomelo_test_once", async (req, res) => {
+  try {
+    const upstream = await fetch("https://api.pomelo.lixqa.cc/v1/lookups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "discord" }),
+      signal: AbortSignal.timeout(12000)
+    });
+    const body = await upstream.text();
+    res.status(200).json({ upstreamStatus: upstream.status, contentType: upstream.headers.get("content-type"), body: body.slice(0, 4000) });
+  } catch (error) {
+    res.status(200).json({ testError: error.message });
+  }
+});
+
 // Render health check
 app.get("/health", (req, res) => {
   res.json({ status: "online", checker: "ready" });

@@ -154,11 +154,11 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 
 
 /* SNIPERS_FIRST_RUN_TUTORIAL_V1 */
-.tutorial-backdrop{position:fixed;inset:0;z-index:1000000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(4,3,9,.76);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-.tutorial-backdrop.open{display:flex;opacity:1;transition:opacity .28s ease}
-.tutorial-backdrop{opacity:0;transition:opacity .28s ease}
-.tutorial-backdrop.closing{opacity:0;pointer-events:none}
-.tutorial-card{transition:transform .28s ease,opacity .28s ease}
+.tutorial-backdrop{position:fixed;inset:0;z-index:1000000;display:flex;visibility:hidden;opacity:0;pointer-events:none;align-items:center;justify-content:center;padding:18px;background:rgba(4,3,9,.76);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:opacity .32s ease,visibility 0s linear .32s}
+.tutorial-backdrop.open{visibility:visible;opacity:1;pointer-events:auto;transition:opacity .42s ease,visibility 0s}
+.tutorial-card{opacity:0;transform:translateY(14px) scale(.98);transition:transform .36s cubic-bezier(.2,.8,.2,1),opacity .36s ease}
+.tutorial-backdrop.open .tutorial-card{opacity:1;transform:translateY(0) scale(1)}
+.tutorial-backdrop.closing{opacity:0;pointer-events:none;visibility:visible;transition:opacity .32s ease,visibility 0s linear .32s}
 .tutorial-backdrop.closing .tutorial-card{transform:translateY(10px) scale(.985);opacity:0}
 .tutorial-card{width:min(560px,100%);max-height:min(82vh,720px);overflow:auto;border:1px solid rgba(255,255,255,.2);border-radius:26px;padding:24px;background:linear-gradient(145deg,rgba(70,37,65,.92),rgba(15,14,25,.96));box-shadow:0 28px 90px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.2);color:var(--text)}
 .tutorial-kicker{font-size:10px;letter-spacing:2px;color:#ff8ba5;font-weight:900}
@@ -195,12 +195,10 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 /* SNIPERS_LOGIN_WELCOME_DELAY_V1 */
 .discord-login-backdrop.welcome-loading .discord-login-card{animation:ogWelcomePulse 1.15s ease-in-out infinite alternate}
 .discord-login-backdrop.welcome-exit{opacity:0;transition:opacity .42s ease;pointer-events:none}
-.tutorial-backdrop.open{animation:ogTutorialFadeIn .48s ease both}
-.tutorial-backdrop.open .tutorial-card{animation:ogTutorialRise .5s cubic-bezier(.2,.8,.2,1) both}
 @keyframes ogWelcomePulse{from{transform:translateY(0) scale(1);filter:brightness(1)}to{transform:translateY(-3px) scale(1.012);filter:brightness(1.12)}}
 @keyframes ogTutorialFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes ogTutorialRise{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(prefers-reduced-motion:reduce){.discord-login-backdrop.welcome-loading .discord-login-card,.tutorial-backdrop.open,.tutorial-backdrop.open .tutorial-card{animation:none!important}.discord-login-backdrop.welcome-exit{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.discord-login-backdrop.welcome-loading .discord-login-card{animation:none!important}.discord-login-backdrop.welcome-exit{transition:none!important}}
 
 </style>
 </head>

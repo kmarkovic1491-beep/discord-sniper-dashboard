@@ -27,8 +27,9 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
   res.json({
     status: "online",
-    checker: "Pomelo V2",
-    provider: "Pomelo V2",
+    checker: "FeedMiner (Apify)",
+    provider: "FeedMiner",
+    providerConfigured: Boolean(process.env.APIFY_API_TOKEN),
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL),
   });
 });
@@ -142,9 +143,71 @@ app.post("/notify", async (req, res) => {
 });
 
 
+// FeedMiner (Apify) provider. It uses the actor the owner tested manually.
+// Keep requests serialized and at least 5 seconds apart; provider/upstream limits
+// may still apply. Never convert unchecked or ambiguous rows into availability.
+const FEEDMINER_ACTOR_ID = "bQ1gNUV9OXLXAP4aj";
+let feedMinerQueue = Promise.resolve();
+let lastFeedMinerStart = 0;
+const feedMinerCache = new Map();
+
+async function runFeedMinerBatch(usernames) {
+  if (!process.env.APIFY_API_TOKEN) {
+    throw Object.assign(new Error("FeedMiner is not configured yet. Add APIFY_API_TOKEN to the Render service environment."), { statusCode: 503 });
+  }
+  const task = feedMinerQueue.then(async () => {
+    const waitMs = Math.max(0, 5000 - (Date.now() - lastFeedMinerStart));
+    if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+    lastFeedMinerStart = Date.now();
+    const response = await fetch("https://api.apify.com/v2/acts/" + FEEDMINER_ACTOR_ID + "/run-sync-get-dataset-items", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + process.env.APIFY_API_TOKEN,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ usernames, maxRows: usernames.length, debugMode: false }),
+      signal: AbortSignal.timeout(120000)
+    });
+    const raw = await response.text();
+    let rows;
+    try { rows = JSON.parse(raw); } catch { throw Object.assign(new Error("FeedMiner returned a non-JSON response (HTTP " + response.status + ")."), { statusCode: 502 }); }
+    if (!response.ok) {
+      const detail = String(rows?.error?.message || rows?.error || rows?.message || raw || response.statusText).slice(0, 240);
+      const limited = response.status === 429 || /rate.?limit|too many requests|temporarily blocked/i.test(detail);
+      throw Object.assign(new Error("FeedMiner request failed (HTTP " + response.status + "): " + detail), { statusCode: limited ? 429 : 502 });
+    }
+    if (!Array.isArray(rows)) throw Object.assign(new Error("FeedMiner did not return a dataset array."), { statusCode: 502 });
+    const normalized = new Map();
+    for (const row of rows) {
+      if (!row || row.kind !== "username" || typeof row.username !== "string") continue;
+      const name = row.username.trim().toLowerCase();
+      const status = String(row.status || "").trim().toLowerCase();
+      if (usernames.includes(name) && ["available", "taken", "invalid"].includes(status)) normalized.set(name, status);
+    }
+    const missing = usernames.filter(name => !normalized.has(name));
+    if (missing.length) {
+      const unchecked = rows.filter(row => row && typeof row.username === "string" && missing.includes(row.username.trim().toLowerCase()));
+      const reason = unchecked.map(row => String(row.reason || row.reason_code || "")).filter(Boolean).join("; ");
+      throw Object.assign(new Error("FeedMiner did not verify: " + missing.join(", ") + (reason ? " (" + reason.slice(0, 180) + ")" : "") + ". No availability result was recorded."), { statusCode: 503 });
+    }
+    for (const [name, status] of normalized) feedMinerCache.set(name, { status, expiresAt: Date.now() + 15000 });
+    return usernames.map(username => ({ username, status: normalized.get(username) }));
+  });
+  feedMinerQueue = task.catch(() => {});
+  return task;
+}
+
+async function checkWithFeedMiner(username) {
+  const cached = feedMinerCache.get(username);
+  if (cached && cached.expiresAt > Date.now()) return cached.status;
+  const result = await runFeedMinerBatch([username]);
+  return result[0].status;
+}
+
 // Render health check
 app.get("/health", (req, res) => {
-  res.json({ status: "online", checker: "Pomelo V2", provider: "Pomelo V2" });
+  res.json({ status: "online", checker: "FeedMiner (Apify)", provider: "FeedMiner", providerConfigured: Boolean(process.env.APIFY_API_TOKEN) });
 });
 
 
@@ -292,10 +355,10 @@ app.post("/api/check", async (req, res) => {
   const username = String(req.body?.username || "").trim().toLowerCase();
   if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid Discord username." });
   try {
-    const status = await checkWithPomelo(username);
+    const status = await checkWithFeedMiner(username);
     return res.json({ username, status });
   } catch (error) {
-    console.error("Pomelo check failed:", error.message);
+    console.error("FeedMiner check failed:", error.message);
     return res.status(error.statusCode || 502).json({ error: error.message });
   }
 });
@@ -306,7 +369,7 @@ app.get("/api/check", async (req, res) => {
   if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid Discord username." });
   try {
     const status = await checkWithPomelo(username);
-    return res.json({ username, status, provider: "Pomelo V2" });
+    return res.json({ username, status, provider: "FeedMiner" });
   } catch (error) {
     console.error("Pomelo check failed:", error.message);
     return res.status(error.statusCode || 502).json({ error: error.message, provider: "Pomelo V2" });
@@ -323,14 +386,11 @@ app.post("/api/check-bulk", async (req, res) => {
   const usernames = [...new Set(input.map(name => name.trim().toLowerCase()))];
   const results = [];
   try {
-    const checked = await Promise.all(usernames.map(async username => ({
-      username,
-      status: await checkWithPomelo(username)
-    })));
+    const checked = await runFeedMinerBatch(usernames);
     results.push(...checked);
     return res.json({ results, checked: results.length, total: usernames.length });
   } catch (error) {
-    console.error("Pomelo bulk check failed:", error.message);
+    console.error("FeedMiner bulk check failed:", error.message);
     return res.status(error.statusCode || 502).json({ error: error.message, results });
   }
 });

@@ -232,128 +232,10 @@ function normalizeApifyStatus(row) {
   return null;
 }
 
-// Pomelo V2 is the free username lookup provider. Its published free tier
-// permits 2 requests per 10 seconds, so serialize calls at a 5.1s interval.
-let lastPomeloRequestAt = 0;
-const pomeloCache = new Map();
-const pomeloInFlight = new Map();
-const pomeloRequestStarts = [];
-
-async function waitForPomeloSlot() {
-  while (true) {
-    const now = Date.now();
-    while (pomeloRequestStarts.length && now - pomeloRequestStarts[0] >= 10000) {
-      pomeloRequestStarts.shift();
-    }
-    if (pomeloRequestStarts.length < 2) {
-      pomeloRequestStarts.push(now);
-      return;
-    }
-    const waitMs = Math.max(25, 10000 - (now - pomeloRequestStarts[0]) + 25);
-    await new Promise(resolve => setTimeout(resolve, waitMs));
-  }
-}
-
-function normalizePomeloStatus(payload) {
-  const queue = [payload];
-  const seen = new Set();
-  while (queue.length) {
-    const value = queue.shift();
-    if (!value || typeof value !== "object" || seen.has(value)) continue;
-    seen.add(value);
-    if (Array.isArray(value)) { queue.push(...value); continue; }
-    for (const [key, raw] of Object.entries(value)) {
-      const k = key.toLowerCase().replace(/[^a-z]/g, "");
-      if (["available", "isavailable", "usernameavailable", "isusernameavailable"].includes(k) && typeof raw === "boolean") return raw ? "available" : "taken";
-      if (k === "taken" && typeof raw === "boolean") return raw ? "taken" : "available";
-      if (["status", "availability", "result"].includes(k) && typeof raw === "string") {
-        const s = raw.trim().toLowerCase().replace(/[ _-]+/g, " ");
-        if (["available", "free", "open", "claimable"].includes(s)) return "available";
-        if (["taken", "unavailable", "not available", "occupied", "reserved", "claimed"].includes(s)) return "taken";
-        if (["invalid", "not allowed", "disallowed"].includes(s)) return "invalid";
-      }
-      if (raw && typeof raw === "object") queue.push(raw);
-    }
-  }
-  return null;
-}
-
-async function checkWithLegacyPomelo(username) {
-  // Compatibility fallback: the original public Lixqa endpoint is deprecated,
-  // but try it only when V2 is returning a server-side failure.
-  const waitMs = Math.max(0, 5100 - (Date.now() - lastPomeloRequestAt));
-  if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
-  lastPomeloRequestAt = Date.now();
-  const url = "https://api.lixqa.de/v3/discord/pomelo/" + encodeURIComponent(username);
-  const response = await fetch(url, {
-    headers: { "Accept": "application/json", "User-Agent": "SNIPERS-OG-Pomelo-Checker/1.0" },
-    signal: AbortSignal.timeout(6000)
-  });
-  const raw = await response.text();
-  let data;
-  try { data = JSON.parse(raw); } catch { throw new Error("Legacy Pomelo endpoint returned non-JSON (HTTP " + response.status + ")."); }
-  if (!response.ok) throw new Error("Legacy Pomelo endpoint returned HTTP " + response.status + ".");
-  const check = data?.data?.check;
-  const code = check?.status;
-  if (code === 2) return "available";
-  if (code === 3) return "taken";
-  if (code === 0) {
-    const errors = Array.isArray(check?.errors) ? check.errors.map(x => String(x?.code || x?.error || x)).join(", ") : String(check?.errors || "");
-    if (/NOT_NORMAL_NAME|BAD_LENGTH|INVALID_CHARS|REPEATING_DOTS|BLACKLISTED_WORD/i.test(errors)) {
-      throw new Error("Username is not eligible for this free provider: " + errors);
-    }
-    throw new Error("Legacy provider rejected the username without a definitive availability result" + (errors ? ": " + errors : "."));
-  }
-  if (code === 1) throw new Error("Legacy provider could not verify this username. No availability result was recorded.");
-  throw new Error("Legacy Pomelo endpoint did not return a definitive availability status.");
-}
-
-async function checkWithPomelo(username) {
-  const cached = pomeloCache.get(username);
-  if (cached && cached.expiresAt > Date.now()) return cached.status;
-  const run = async () => {
-    await waitForPomeloSlot();
-    const headers = { "Content-Type": "application/json" };
-    if (process.env.POMELO_API_KEY) headers.Authorization = process.env.POMELO_API_KEY;
-    const upstream = await fetch("https://api.pomelo.lixqa.cc/v1/lookups", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ username }),
-      signal: AbortSignal.timeout(20000)
-    });
-    const raw = await upstream.text();
-    let payload;
-    try { payload = JSON.parse(raw); } catch { throw new Error("Pomelo returned invalid JSON (HTTP " + upstream.status + ")."); }
-    if (upstream.status === 429) throw Object.assign(new Error("Pomelo free-tier limit reached. Wait before scanning again."), { statusCode: 429 });
-    if (!upstream.ok) {
-      const detail = String(payload?.message || payload?.error || payload?.detail || raw || upstream.statusText || "unknown API error").slice(0, 240);
-      if (upstream.status >= 500) {
-        console.warn("Pomelo V2 returned HTTP " + upstream.status + "; trying legacy compatibility endpoint. Detail: " + detail);
-        try {
-          const legacyStatus = await checkWithLegacyPomelo(username);
-          pomeloCache.set(username, { status: legacyStatus, expiresAt: Date.now() + 15000 });
-          return legacyStatus;
-        } catch (legacyError) {
-          throw new Error("Pomelo V2 HTTP " + upstream.status + " (" + detail + "). Legacy fallback: " + legacyError.message);
-        }
-      }
-      throw new Error("Pomelo V2 rejected the lookup (HTTP " + upstream.status + "): " + detail + ". No availability result was recorded.");
-    }
-    const status = normalizePomeloStatus(payload);
-    if (!status) throw new Error("Pomelo response did not contain a recognized availability status. No result was marked available.");
-    pomeloCache.set(username, { status, expiresAt: Date.now() + 30000 });
-    return status;
-  };
-  if (pomeloInFlight.has(username)) return pomeloInFlight.get(username);
-  const current = run().finally(() => pomeloInFlight.delete(username));
-  pomeloInFlight.set(username, current);
-  return current;
-}
-
-// Single username lookup via Pomelo V2.
+// Single username lookup via FeedMiner.
 app.post("/api/check", async (req, res) => {
   const username = String(req.body?.username || "").trim().toLowerCase();
-  if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid Discord username." });
+  if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid username." });
   try {
     const status = await checkWithFeedMiner(username);
     return res.json({ username, status });
@@ -366,7 +248,7 @@ app.post("/api/check", async (req, res) => {
 // Read-only GET endpoint for manual diagnostics and simple integrations.
 app.get("/api/check", async (req, res) => {
   const username = String(req.query?.username || "").trim().toLowerCase();
-  if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid Discord username." });
+  if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid username." });
   try {
     const status = await checkWithFeedMiner(username);
     return res.json({ username, status, provider: "FeedMiner" });

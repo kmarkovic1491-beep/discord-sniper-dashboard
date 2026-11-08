@@ -5,13 +5,8 @@ const app = express();
 app.use(express.json({ limit: "10kb" }));
 
 const allowedOrigin = "https://kmarkovic1491-beep.github.io";
-const API_URL =
-  "https://discord.com/api/v9/unique-username/username-attempt-unauthed";
-
-const lastChecks = new Map();
 const verifiedNames = new Map();
 // Respect Discord's upstream 429 response across every visitor using this backend.
-let discordCooldownUntil = 0;
 const lastWebhookTests = new Map();
 
 app.use((req, res, next) => {
@@ -33,98 +28,8 @@ app.get("/", (req, res) => {
   res.json({
     status: "online",
     checker: "ready",
-    checkIntervalMs: 2000,
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL),
-    discordCooldownRemainingMs: Math.max(0, discordCooldownUntil - Date.now()),
-    discordChecksPaused: Date.now() < discordCooldownUntil
   });
-});
-
-// Check one username
-app.post("/check", async (req, res) => {
-  const username = req.body?.username;
-
-  if (
-    typeof username !== "string" ||
-    !/^[a-z0-9_.]{2,4}$/.test(username)
-  ) {
-    return res.status(400).json({ status: "INVALID" });
-  }
-
-  const ip = req.ip;
-  const now = Date.now();
-
-  if (now < discordCooldownUntil) {
-    return res.status(429).json({
-      status: "RATE_LIMITED",
-      retryAfterMs: discordCooldownUntil - now,
-      message: "Discord has asked the checker to pause. Please wait."
-    });
-  }
-
-  if (lastChecks.has(ip) && now - lastChecks.get(ip) < 2000) {
-    return res.status(429).json({
-      status: "RATE_LIMITED",
-      retryAfterMs: 2000 - (now - lastChecks.get(ip)),
-      message: "Please wait before checking again."
-    });
-  }
-
-  lastChecks.set(ip, now);
-
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ username }),
-      signal: AbortSignal.timeout(10000)
-    });
-
-    if (response.status === 429) {
-      // Discord may return Retry-After in a header or retry_after in its JSON body.
-      let body = {};
-      try { body = await response.json(); } catch {}
-      const retryHeader = response.headers.get("retry-after");
-      const headerNumber = Number(retryHeader);
-      const headerDateMs = retryHeader && !Number.isFinite(headerNumber)
-        ? Date.parse(retryHeader) - Date.now()
-        : 0;
-      const bodySeconds = Number(body.retry_after);
-      const retryAfterMs = Math.max(1000, Math.ceil(
-        Number.isFinite(headerNumber) && headerNumber > 0
-          ? headerNumber * 1000
-          : (headerDateMs > 0
-            ? headerDateMs
-            : (Number.isFinite(bodySeconds) && bodySeconds > 0 ? bodySeconds * 1000 : 60000))
-      ));
-      discordCooldownUntil = Math.max(discordCooldownUntil, Date.now() + retryAfterMs);
-      return res.status(429).json({
-        status: "RATE_LIMITED",
-        retryAfterMs: discordCooldownUntil - Date.now(),
-        message: "Discord has rate-limited this check. The checker is paused."
-      });
-    }
-
-    const data = await response.json();
-
-    if (response.ok && typeof data.taken === "boolean") {
-      if (!data.taken) {
-        verifiedNames.set(username, Date.now() + 60000);
-      }
-
-      return res.json({
-        status: data.taken ? "TAKEN" : "AVAILABLE"
-      });
-    }
-
-    return res.status(502).json({ status: "ERROR" });
-  } catch (error) {
-    return res.status(502).json({ status: "ERROR" });
-  }
 });
 
 // Test the configured webhook

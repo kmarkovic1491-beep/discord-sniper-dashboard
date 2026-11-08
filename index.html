@@ -40,7 +40,7 @@
 const $=id=>document.getElementById(id), KEY="snipers-og-crimson-moon-v1";
 let state={targets:[],history:[],message:"🔴 SNIPERS OG — {username} was marked {status}.",workerUrl:""};
 try{const v=JSON.parse(localStorage.getItem(KEY)||"{}");if(v&&typeof v==="object")state=Object.assign(state,v)}catch(e){}
-if(!Array.isArray(state.targets))state.targets=[];if(!Array.isArray(state.history))state.history=[];delete state.workerUrl;state.workerUrl=String(state.workerUrl||"");
+if(!Array.isArray(state.targets))state.targets=[];if(!Array.isArray(state.history))state.history=[];state.workerUrl=String(state.workerUrl||"");
 let ideas=[];
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){toast("Browser storage unavailable.")}}
 function toast(m){const x=$("toast");x.textContent=m;x.style.display="block"}

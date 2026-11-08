@@ -124,9 +124,22 @@ app.get("/auth/me", (req, res) => {
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   const user = verifySession(token);
   if (!user) return res.status(401).json({ authenticated: false });
-  return res.json({ authenticated: true, user: { id: user.sub, username: user.username, global_name: user.global_name, avatar: user.avatar, is_owner: Boolean(user.is_owner) }, expiresAt: user.exp });
+  return res.json({ authenticated: true, user: { id: user.sub, username: user.username, global_name: user.global_name, avatar: user.avatar, is_owner: Boolean(process.env.SNIPERS_OWNER_DISCORD_ID && String(user.sub) === String(process.env.SNIPERS_OWNER_DISCORD_ID)) }, expiresAt: user.exp });
 });
 app.post("/auth/logout", (req, res) => res.json({ success: true }));
+app.post("/auth/owner-unlock", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const user = requireSession(req, res);
+  if (!user) return;
+  if (!process.env.SNIPERS_OWNER_DISCORD_ID || String(user.sub) !== String(process.env.SNIPERS_OWNER_DISCORD_ID)) return res.status(403).json({ success: false, error: "Owner access only." });
+  const supplied = typeof req.body?.password === "string" ? req.body.password : "";
+  const expected = String(process.env.OWNER_PANEL_PASSWORD_SHA256 || "").toLowerCase();
+  const actual = crypto.createHash("sha256").update(supplied, "utf8").digest("hex");
+  const a = Buffer.from(actual, "hex"), b = Buffer.from(expected, "hex");
+  if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.status(401).json({ success: false, error: "Incorrect owner password." });
+  return res.json({ success: true });
+});
+
 
 /* SNIPERS_USER_CLOUD_STATE_V1 — each authenticated account gets its own saved dashboard. */
 let userStatePool = null;

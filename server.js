@@ -235,6 +235,69 @@ app.post("/notify", async (req, res) => {
   }
 });
 
+
+// Render health check
+app.get("/health", (req, res) => {
+  res.json({ status: "online", checker: "ready" });
+});
+
+// Apify-backed username availability check
+app.post("/api/check", async (req, res) => {
+  const username = String(req.body?.username || "").trim();
+  if (!/^[a-z0-9._]{2,32}$/i.test(username)) {
+    return res.status(400).json({ error: "Enter a valid Discord username." });
+  }
+  if (!process.env.APIFY_TOKEN) {
+    return res.status(503).json({ error: "APIFY_TOKEN is not configured on the Render service." });
+  }
+
+  try {
+    const upstream = await fetch(
+      "https://api.apify.com/v2/acts/maged120~discord-username-checker/run-sync-get-dataset-items?format=json&clean=true",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + process.env.APIFY_TOKEN,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ usernames: [username] }),
+        signal: AbortSignal.timeout(60000)
+      }
+    );
+    const raw = await upstream.text();
+    if (!upstream.ok) {
+      console.error("Apify request failed with HTTP", upstream.status);
+      return res.status(502).json({ error: "Apify checker request failed (HTTP " + upstream.status + ")." });
+    }
+
+    let rows;
+    try { rows = JSON.parse(raw); } catch {
+      return res.status(502).json({ error: "Apify returned invalid JSON." });
+    }
+    const row = Array.isArray(rows)
+      ? rows.find(x => String(x.username || x.input || "").toLowerCase() === username.toLowerCase()) || rows[0]
+      : rows;
+    if (!row || typeof row !== "object") {
+      return res.status(502).json({ error: "Apify returned no result for this username." });
+    }
+
+    const rawStatus = String(row.status || row.availability || row.result || "").toLowerCase();
+    let status = null;
+    if (rawStatus.includes("available") || row.available === true || row.isAvailable === true) status = "available";
+    else if (rawStatus.includes("taken") || row.taken === true || row.available === false || row.isAvailable === false) status = "taken";
+    else if (rawStatus.includes("invalid") || row.valid === false) status = "invalid";
+
+    if (!status) {
+      console.error("Unrecognized Apify result shape");
+      return res.status(502).json({ error: "Apify returned an unrecognized result. Check the actor output schema." });
+    }
+    return res.json({ username, status });
+  } catch (error) {
+    console.error("Apify check failed:", error.message);
+    return res.status(502).json({ error: "Could not complete the Apify username check." });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

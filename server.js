@@ -199,6 +199,28 @@ function normalizePomeloStatus(payload) {
   return null;
 }
 
+async function checkWithLegacyPomelo(username) {
+  // Compatibility fallback: the original public Lixqa endpoint is deprecated,
+  // but try it only when V2 is returning a server-side failure.
+  const waitMs = Math.max(0, 5100 - (Date.now() - lastPomeloRequestAt));
+  if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+  lastPomeloRequestAt = Date.now();
+  const url = "https://api.lixqa.de/v3/discord/pomelo/" + encodeURIComponent(username);
+  const response = await fetch(url, {
+    headers: { "Accept": "application/json", "User-Agent": "SNIPERS-OG-Pomelo-Checker/1.0" },
+    signal: AbortSignal.timeout(15000)
+  });
+  const raw = await response.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { throw new Error("Legacy Pomelo endpoint returned non-JSON (HTTP " + response.status + ")."); }
+  if (!response.ok) throw new Error("Legacy Pomelo endpoint returned HTTP " + response.status + ".");
+  const code = data?.data?.check?.status;
+  if (code === 2) return "available";
+  if (code === 3) return "taken";
+  if (code === 0) return "invalid";
+  throw new Error("Legacy Pomelo endpoint did not return a definitive availability status.");
+}
+
 async function checkWithPomelo(username) {
   const cached = pomeloCache.get(username);
   if (cached && cached.expiresAt > Date.now()) return cached.status;
@@ -218,7 +240,15 @@ async function checkWithPomelo(username) {
     let payload;
     try { payload = JSON.parse(raw); } catch { throw new Error("Pomelo returned invalid JSON (HTTP " + upstream.status + ")."); }
     if (upstream.status === 429) throw Object.assign(new Error("Pomelo free-tier limit reached. Wait before scanning again."), { statusCode: 429 });
-    if (!upstream.ok) throw new Error("Pomelo rejected the lookup (HTTP " + upstream.status + "): " + String(payload?.message || payload?.error || "unknown API error").slice(0, 180));
+    if (!upstream.ok) {
+      if (upstream.status >= 500) {
+        console.warn("Pomelo V2 server error; trying legacy public endpoint.");
+        const legacyStatus = await checkWithLegacyPomelo(username);
+        pomeloCache.set(username, { status: legacyStatus, expiresAt: Date.now() + 15000 });
+        return legacyStatus;
+      }
+      throw new Error("Pomelo rejected the lookup (HTTP " + upstream.status + "): " + String(payload?.message || payload?.error || "unknown API error").slice(0, 180));
+    }
     const status = normalizePomeloStatus(payload);
     if (!status) throw new Error("Pomelo response did not contain a recognized availability status. No result was marked available.");
     pomeloCache.set(username, { status, expiresAt: Date.now() + 30000 });

@@ -134,6 +134,24 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
  .mobilehead{margin-top:0!important}
 }
 
+
+/* OG_THEME_COLOR_FIX_V2 — make every preset recolor the actual interface */
+:root[data-og-theme] body{background-color:var(--bg)!important;background-image:radial-gradient(ellipse at 14% 8%,color-mix(in srgb,var(--red) 24%,transparent),transparent 38%),radial-gradient(ellipse at 88% 18%,color-mix(in srgb,var(--red2) 17%,transparent),transparent 34%),linear-gradient(145deg,var(--bg),var(--panel2) 56%,var(--bg))!important;color:var(--text)!important}
+:root[data-og-theme] .sidebar,:root[data-og-theme] .navmobile,:root[data-og-theme] .panel,:root[data-og-theme] .stat,:root[data-og-theme] .hero,:root[data-og-theme] .card,:root[data-og-theme] .modal,:root[data-og-theme] .history-card,:root[data-og-theme] .generator-card{background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 88%,white 12%),color-mix(in srgb,var(--panel2) 90%,transparent))!important;border-color:color-mix(in srgb,var(--red) 25%,var(--line))!important;color:var(--text)!important}
+:root[data-og-theme] .target,:root[data-og-theme] .targetrow,:root[data-og-theme] .settingline,:root[data-og-theme] .idea,:root[data-og-theme] .notice,:root[data-og-theme] .empty{background:color-mix(in srgb,var(--panel) 86%,transparent)!important;border-color:var(--line)!important;color:var(--text)!important}
+:root[data-og-theme] .btn:not(.secondary):not(.ghost),:root[data-og-theme] .nav button.active,:root[data-og-theme] .navmobile button.active{background:linear-gradient(135deg,var(--red2),var(--red))!important;border-color:color-mix(in srgb,var(--red2) 65%,white)!important;color:white!important}
+:root[data-og-theme] .btn.secondary,:root[data-og-theme] .checklink,:root[data-og-theme] .iconbtn{background:color-mix(in srgb,var(--panel2) 88%,transparent)!important;border-color:var(--line)!important;color:var(--text)!important}
+:root[data-og-theme] input,:root[data-og-theme] select,:root[data-og-theme] textarea,:root[data-og-theme] .input{background:color-mix(in srgb,var(--panel2) 90%,transparent)!important;border-color:var(--line)!important;color:var(--text)!important;color-scheme:inherit}
+:root[data-og-theme] input::placeholder,:root[data-og-theme] textarea::placeholder{color:var(--muted)!important}
+:root[data-og-theme] .muted,:root[data-og-theme] .paneldesc,:root[data-og-theme] .fieldlabel,:root[data-og-theme] .targetmeta{color:var(--muted)!important}
+:root[data-og-theme] .eyebrow,:root[data-og-theme] .brandname span,:root[data-og-theme] .navmobile button.active{color:var(--red2)!important}
+:root[data-og-theme] .badge.taken{background:color-mix(in srgb,var(--red) 20%,var(--panel))!important;border-color:color-mix(in srgb,var(--red) 55%,var(--line))!important}
+:root[data-og-theme="light"] .btn:not(.secondary):not(.ghost),:root[data-og-theme="light"] .navmobile button.active{color:#fff!important}
+:root[data-og-theme="light"] .navmobile{background:rgba(245,246,250,.88)!important}
+:root[data-og-theme="light"] .navmobile button{color:#555b66!important}
+:root[data-og-theme="light"] .navmobile button.active{color:#fff!important}
+.theme-swatches span{border-color:var(--line)!important}
+
 </style>
 </head>
 <body>

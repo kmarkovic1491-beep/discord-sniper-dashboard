@@ -149,7 +149,7 @@ app.get("/auth/me", (req, res) => {
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   const user = verifySession(token);
   if (!user) return res.status(401).json({ authenticated: false });
-  return res.json({ authenticated: true, user: { id: user.sub, username: user.username, global_name: user.global_name, avatar: user.avatar }, expiresAt: user.exp });
+  return res.json({ authenticated: true, user: { id: user.sub, username: user.username, global_name: user.global_name, avatar: user.avatar, is_owner: Boolean(user.is_owner) }, expiresAt: user.exp });
 });
 app.post("/auth/logout", (req, res) => res.json({ success: true }));
 

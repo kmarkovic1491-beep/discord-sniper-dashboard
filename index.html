@@ -183,6 +183,17 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 :root[data-og-theme] .nav button span,:root[data-og-theme] .moon,:root[data-og-theme] .eyebrow{color:var(--og-accent-2)!important}
 :root[data-og-theme] .moon{background:var(--og-accent)!important;border-color:var(--og-accent-2)!important}
 
+
+/* SNIPERS_LOGIN_WELCOME_DELAY_V1 */
+.discord-login-backdrop.welcome-loading .discord-login-card{animation:ogWelcomePulse 1.15s ease-in-out infinite alternate}
+.discord-login-backdrop.welcome-exit{opacity:0;transition:opacity .42s ease;pointer-events:none}
+.tutorial-backdrop.open{animation:ogTutorialFadeIn .48s ease both}
+.tutorial-backdrop.open .tutorial-card{animation:ogTutorialRise .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes ogWelcomePulse{from{transform:translateY(0) scale(1);filter:brightness(1)}to{transform:translateY(-3px) scale(1.012);filter:brightness(1.12)}}
+@keyframes ogTutorialFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes ogTutorialRise{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.discord-login-backdrop.welcome-loading .discord-login-card,.tutorial-backdrop.open,.tutorial-backdrop.open .tutorial-card{animation:none!important}.discord-login-backdrop.welcome-exit{transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -343,7 +354,28 @@ async function initializeDiscordAuth(){
   if(!response.ok)throw Error("Session expired");
   const data=await response.json();if(!data.authenticated||!data.user)throw Error("Not authenticated");
   showDiscordUser(data.user);
-  try{if(localStorage.getItem("snipers-og-discord-tutorial-seen-v1")!=="1")openTutorial()}catch(e){openTutorial()}
+  $("discordLoginBackdrop").hidden=false;
+  $("discordLoginBackdrop").classList.remove("welcome-exit");
+  $("discordLoginBackdrop").classList.add("welcome-loading");
+  $("discordLoginButton").disabled=true;
+  $("discordLoginButton").textContent="✓ Discord connected";
+  const loginTitle=$("discordLoginBackdrop").querySelector("h1");
+  if(loginTitle)loginTitle.textContent="Preparing your dashboard…";
+  const loginCopy=$("discordLoginBackdrop").querySelector("p");
+  if(loginCopy)loginCopy.textContent="Discord connected. Getting SNIPERS OG ready for you.";
+  $("discordLoginStatus").textContent="Checking your session · loading your workspace…";
+  await new Promise(resolve=>setTimeout(resolve,3000));
+  $("discordLoginBackdrop").classList.remove("welcome-loading");
+  $("discordLoginBackdrop").classList.add("welcome-exit");
+  await new Promise(resolve=>setTimeout(resolve,450));
+  $("discordLoginBackdrop").hidden=true;
+  $("discordLoginBackdrop").classList.remove("welcome-exit");
+  $("discordLoginButton").disabled=false;
+  $("discordLoginButton").textContent="◉ Continue with Discord";
+  if(loginTitle)loginTitle.textContent="Sign in with Discord";
+  if(loginCopy)loginCopy.textContent="Connect your Discord account to enter the dashboard. Once sign-in succeeds, your quick-start tutorial will begin.";
+  $("discordLoginStatus").textContent="Secure sign-in uses Discord OAuth. Your Discord password is never entered or stored here.";
+  openTutorial();
  }catch(e){try{localStorage.removeItem(DISCORD_SESSION_KEY)}catch(err){}setDiscordLoginVisible(true);$("discordAccountState").textContent="Sign-in expired. Please sign in again.";$("discordLoginStatus").textContent="Your Discord sign-in needs to be refreshed."}
 }
 

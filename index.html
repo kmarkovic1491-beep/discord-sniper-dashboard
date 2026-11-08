@@ -704,36 +704,12 @@ async function initializeDiscordAuth(){
   const data=await response.json();if(!data.authenticated||!data.user)throw Error("Not authenticated");
   showDiscordUser(data.user);await syncCloudState(token);
   const tutorialSeen=(()=>{try{return localStorage.getItem("snipers-og-discord-tutorial-seen-v2")==="1"||localStorage.getItem("snipers-og-discord-tutorial-seen-v1")==="1"}catch(e){return false}})();
-  if(tutorialSeen){
-   setDiscordLoginVisible(false);
-   $("discordLoginButton").disabled=false;
-   $("discordLoginButton").textContent="◉ Continue with Discord";
-   $("discordLoginStatus").textContent="You're signed in. Your saved workspace is ready.";
-   return;
-  }
-  $("discordLoginBackdrop").hidden=false;
-  $("discordLoginBackdrop").classList.remove("welcome-exit");
-  $("discordLoginBackdrop").classList.add("welcome-loading");
-  $("discordLoginButton").disabled=true;
-  $("discordLoginButton").textContent="✓ Discord connected";
-  const loginTitle=$("discordLoginBackdrop").querySelector("h1");
-  if(loginTitle)loginTitle.textContent="Preparing your dashboard…";
-  const loginCopy=$("discordLoginBackdrop").querySelector("p");
-  if(loginCopy)loginCopy.textContent="Discord connected. Getting SNIPERS OG ready for you.";
-  $("discordLoginStatus").textContent="Checking your session · loading your workspace…";
-  await new Promise(resolve=>setTimeout(resolve,5000));
-  $("discordLoginBackdrop").classList.remove("welcome-loading");
-  void $("discordLoginBackdrop").offsetWidth;
-  $("discordLoginBackdrop").classList.add("welcome-exit");
-  await new Promise(resolve=>setTimeout(resolve,540));
-  $("discordLoginBackdrop").hidden=true;
-  $("discordLoginBackdrop").classList.remove("welcome-exit");
+  setDiscordLoginVisible(false);
+  $("discordLoginBackdrop").classList.remove("welcome-loading","welcome-exit");
   $("discordLoginButton").disabled=false;
   $("discordLoginButton").textContent="◉ Continue with Discord";
-  if(loginTitle)loginTitle.textContent="Sign in with Discord";
-  if(loginCopy)loginCopy.textContent="Connect your Discord account to enter the dashboard. Once sign-in succeeds, your quick-start tutorial will begin.";
-  $("discordLoginStatus").textContent="Secure sign-in uses Discord OAuth. Your Discord password is never entered or stored here.";
-  openTutorial();
+  $("discordLoginStatus").textContent="You're signed in. Your saved workspace is ready.";
+  if(!tutorialSeen)openTutorial();
  }catch(e){const expired=e&&e.message==="Session expired";if(expired){try{localStorage.removeItem(DISCORD_SESSION_KEY)}catch(err){}setDiscordLoginVisible(true);$("discordAccountState").textContent="Sign-in expired. Please sign in again.";$("discordLoginStatus").textContent="Your Discord sign-in needs to be refreshed."}else{setDiscordLoginVisible(false);$("discordAccountState").textContent="Your saved session is being kept. The sign-in server is temporarily unavailable.";$("discordLoginStatus").textContent="Still keeping you signed in on this device. Your local workspace remains available."}}
 }
 

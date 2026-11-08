@@ -294,6 +294,34 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 .navmobile button{font-size:9px!important;gap:3px}
 
 </style>
+
+<style>
+/* MOBILE HERO SPACING + REMOVE STRAY GREEN STATUS DOT */
+@media(max-width:850px){
+  #section-dashboard>.hero{
+    width:100%;
+    min-width:0;
+    padding:18px 17px;
+    margin:8px 0 22px;
+    gap:14px;
+    align-items:center;
+    overflow:hidden;
+  }
+  #section-dashboard>.hero>div:first-child{min-width:0;flex:1 1 auto}
+  #section-dashboard>.hero h1{font-size:clamp(27px,7.4vw,36px);line-height:1.12;overflow-wrap:break-word}
+  #section-dashboard>.hero p{font-size:14px;line-height:1.55;overflow-wrap:break-word}
+  #section-dashboard>.hero .heroart{width:68px;height:68px;flex:0 0 68px}
+  #section-dashboard>.hero .heroart:after{font-size:40px}
+  .main{padding-left:14px!important;padding-right:14px!important}
+}
+@media(max-width:380px){
+  #section-dashboard>.hero{padding:16px 14px;gap:10px}
+  #section-dashboard>.hero .heroart{width:58px;height:58px;flex-basis:58px}
+  #section-dashboard>.hero .heroart:after{font-size:34px}
+}
+.dot{background:#aeb4c5!important;box-shadow:0 0 7px rgba(190,198,220,.45)!important}
+</style>
+
 </head>
 <body>
 <div class="shell">

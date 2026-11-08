@@ -316,7 +316,7 @@ function renderTutorial(){
  $("tutorialOpenSection").textContent="Open "+({dashboard:"Overview",watchlist:"Names",generator:"Idea generator",settings:"Settings"}[step.section]);
 }
 function openTutorial(){tutorialIndex=0;renderTutorial();$("tutorialBackdrop").classList.add("open")}
-function closeTutorial(markSeen=true){$("tutorialBackdrop").classList.remove("open");if(markSeen){try{localStorage.setItem("snipers-og-tutorial-seen","1")}catch(e){}}}
+function closeTutorial(markSeen=true){$("tutorialBackdrop").classList.remove("open");if(markSeen){try{localStorage.setItem("snipers-og-discord-tutorial-seen-v1","1")}catch(e){}}}
 $("tutorialNext").addEventListener("click",()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()});
 $("tutorialBack").addEventListener("click",()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}});
 $("tutorialSkip").addEventListener("click",()=>closeTutorial());
@@ -343,7 +343,7 @@ async function initializeDiscordAuth(){
   if(!response.ok)throw Error("Session expired");
   const data=await response.json();if(!data.authenticated||!data.user)throw Error("Not authenticated");
   showDiscordUser(data.user);
-  try{if(localStorage.getItem("snipers-og-tutorial-seen")!=="1")openTutorial()}catch(e){openTutorial()}
+  try{if(localStorage.getItem("snipers-og-discord-tutorial-seen-v1")!=="1")openTutorial()}catch(e){openTutorial()}
  }catch(e){try{localStorage.removeItem(DISCORD_SESSION_KEY)}catch(err){}setDiscordLoginVisible(true);$("discordAccountState").textContent="Sign-in expired. Please sign in again.";$("discordLoginStatus").textContent="Your Discord sign-in needs to be refreshed."}
 }
 

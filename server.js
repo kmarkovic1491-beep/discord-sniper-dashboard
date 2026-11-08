@@ -322,7 +322,7 @@ async function runFeedMinerBatch(usernames) {
     throw Object.assign(new Error("FeedMiner is not configured yet. Add APIFY_API_TOKEN to the Render service environment."), { statusCode: 503 });
   }
   const task = feedMinerQueue.then(async () => {
-    const waitMs = Math.max(0, 3000 - (Date.now() - lastFeedMinerStart));
+    const waitMs = Math.max(0, 1000 - (Date.now() - lastFeedMinerStart));
     if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
     lastFeedMinerStart = Date.now();
     const response = await fetch("https://api.apify.com/v2/acts/" + FEEDMINER_ACTOR_ID + "/run-sync-get-dataset-items", {

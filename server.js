@@ -243,10 +243,23 @@ app.get("/health", (req, res) => {
 
 
 function normalizeApifyStatus(row) {
-  const rawStatus = String(row.status || row.availability || row.result || "").toLowerCase();
-  if (rawStatus.includes("available") || row.available === true || row.isAvailable === true) return "available";
-  if (rawStatus.includes("taken") || row.taken === true || row.available === false || row.isAvailable === false) return "taken";
-  if (rawStatus.includes("invalid") || row.valid === false) return "invalid";
+  if (!row || typeof row !== "object") return null;
+
+  // Trust explicit booleans first. Do not use substring matching here:
+  // "unavailable" contains "available" and must never trigger an alert.
+  if (typeof row.available === "boolean") return row.available ? "available" : "taken";
+  if (typeof row.isAvailable === "boolean") return row.isAvailable ? "available" : "taken";
+  if (typeof row.taken === "boolean") return row.taken ? "taken" : "available";
+  if (row.valid === false) return "invalid";
+
+  const raw = String(row.status || row.availability || row.result || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[ _-]+/g, " ");
+
+  if (["available", "free", "open", "claimable"].includes(raw)) return "available";
+  if (["taken", "unavailable", "not available", "occupied", "reserved"].includes(raw)) return "taken";
+  if (["invalid", "not allowed", "disallowed"].includes(raw)) return "invalid";
   return null;
 }
 
@@ -370,11 +383,7 @@ app.post("/api/check", async (req, res) => {
       return res.status(502).json({ error: "Apify returned no result for this username." });
     }
 
-    const rawStatus = String(row.status || row.availability || row.result || "").toLowerCase();
-    let status = null;
-    if (rawStatus.includes("available") || row.available === true || row.isAvailable === true) status = "available";
-    else if (rawStatus.includes("taken") || row.taken === true || row.available === false || row.isAvailable === false) status = "taken";
-    else if (rawStatus.includes("invalid") || row.valid === false) status = "invalid";
+    const status = normalizeApifyStatus(row);
 
     if (!status) {
       console.error("Unrecognized Apify result shape:", JSON.stringify({ isArray: Array.isArray(rows), topKeys: rows && !Array.isArray(rows) && typeof rows === "object" ? Object.keys(rows) : [], rowKeys: Object.keys(row), sample: Object.fromEntries(Object.entries(row).filter(([key]) => !/username|input|query/i.test(key)).slice(0, 20)) }));

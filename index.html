@@ -464,6 +464,35 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 :root[data-og-theme="light"] .eyebrow{color:#3948bd!important}
 </style>
 
+
+<style>
+/* CLEAN_NEUTRAL_NAV_AND_TEXT */
+:root[data-og-theme] .nav button,
+:root[data-og-theme] .navmobile button,
+:root[data-og-theme] .nav button span,
+:root[data-og-theme] .navmobile button b{
+  color:var(--text)!important;
+}
+:root[data-og-theme] .nav button.active,
+:root[data-og-theme] .nav button:hover,
+:root[data-og-theme] .navmobile button.active{
+  color:var(--text)!important;
+  background:rgba(255,255,255,.075)!important;
+  border-color:rgba(255,255,255,.14)!important;
+  box-shadow:none!important;
+}
+:root[data-og-theme="light"] .nav button.active,
+:root[data-og-theme="light"] .nav button:hover,
+:root[data-og-theme="light"] .navmobile button.active{
+  color:#232428!important;
+  background:rgba(35,36,40,.07)!important;
+  border-color:rgba(35,36,40,.14)!important;
+}
+:root[data-og-theme="dark"] .brandtag,
+:root[data-og-theme="dark"] .eyebrow,
+:root[data-og-theme="dark"] .tutorial-kicker{color:#fff!important}
+</style>
+
 </head>
 <body>
 <div class="shell">

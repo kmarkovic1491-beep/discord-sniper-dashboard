@@ -127,16 +127,22 @@ app.get("/auth/me", (req, res) => {
   return res.json({ authenticated: true, user: { id: user.sub, username: user.username, global_name: user.global_name, avatar: user.avatar, is_owner: Boolean(process.env.SNIPERS_OWNER_DISCORD_ID && String(user.sub) === String(process.env.SNIPERS_OWNER_DISCORD_ID)) }, expiresAt: user.exp });
 });
 app.post("/auth/logout", (req, res) => res.json({ success: true }));
+const ownerUnlockAttempts = new Map();
 app.post("/auth/owner-unlock", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const user = requireSession(req, res);
   if (!user) return;
   if (!process.env.SNIPERS_OWNER_DISCORD_ID || String(user.sub) !== String(process.env.SNIPERS_OWNER_DISCORD_ID)) return res.status(403).json({ success: false, error: "Owner access only." });
+  const ip = String(req.ip || "unknown");
+  const attempt = ownerUnlockAttempts.get(ip) || { count: 0, resetAt: Date.now() + 15 * 60 * 1000 };
+  if (attempt.resetAt <= Date.now()) { attempt.count = 0; attempt.resetAt = Date.now() + 15 * 60 * 1000; }
+  if (attempt.count >= 5) return res.status(429).json({ success: false, error: "Too many attempts. Wait 15 minutes." });
   const supplied = typeof req.body?.password === "string" ? req.body.password : "";
   const expected = String(process.env.OWNER_PANEL_PASSWORD_SHA256 || "").toLowerCase();
   const actual = crypto.createHash("sha256").update(supplied, "utf8").digest("hex");
   const a = Buffer.from(actual, "hex"), b = Buffer.from(expected, "hex");
-  if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.status(401).json({ success: false, error: "Incorrect owner password." });
+  if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) { attempt.count += 1; ownerUnlockAttempts.set(ip, attempt); return res.status(401).json({ success: false, error: "Incorrect owner password." }); }
+  ownerUnlockAttempts.delete(ip);
   return res.json({ success: true });
 });
 

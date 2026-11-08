@@ -96,7 +96,7 @@ async function checkTargetViaApi(next,silent=false){
  finally{activeCheck=false;if(btn){btn.disabled=false;btn.textContent="◉ CHECK NEXT UNKNOWN NAME ↗"}}
  return succeeded;
 }
-async async function checkNextViaApi(){
+async function checkNextViaApi(){
  const next=state.targets.find(t=>t.status==="UNKNOWN");
  if(!next){toast("No UNKNOWN candidates in your watchlist.");return}
  await checkTargetViaApi(next,false);

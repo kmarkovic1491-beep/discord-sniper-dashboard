@@ -171,9 +171,25 @@ function normalizeApifyStatus(row) {
 
 // Pomelo V2 is the free username lookup provider. Its published free tier
 // permits 2 requests per 10 seconds, so serialize calls at a 5.1s interval.
-let pomeloQueue = Promise.resolve();
 let lastPomeloRequestAt = 0;
 const pomeloCache = new Map();
+const pomeloInFlight = new Map();
+const pomeloRequestStarts = [];
+
+async function waitForPomeloSlot() {
+  while (true) {
+    const now = Date.now();
+    while (pomeloRequestStarts.length && now - pomeloRequestStarts[0] >= 10000) {
+      pomeloRequestStarts.shift();
+    }
+    if (pomeloRequestStarts.length < 2) {
+      pomeloRequestStarts.push(now);
+      return;
+    }
+    const waitMs = Math.max(25, 10000 - (now - pomeloRequestStarts[0]) + 25);
+    await new Promise(resolve => setTimeout(resolve, waitMs));
+  }
+}
 
 function normalizePomeloStatus(payload) {
   const queue = [payload];
@@ -233,9 +249,7 @@ async function checkWithPomelo(username) {
   const cached = pomeloCache.get(username);
   if (cached && cached.expiresAt > Date.now()) return cached.status;
   const run = async () => {
-    const waitMs = Math.max(0, 5100 - (Date.now() - lastPomeloRequestAt));
-    if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
-    lastPomeloRequestAt = Date.now();
+    await waitForPomeloSlot();
     const headers = { "Content-Type": "application/json" };
     if (process.env.POMELO_API_KEY) headers.Authorization = process.env.POMELO_API_KEY;
     const upstream = await fetch("https://api.pomelo.lixqa.cc/v1/lookups", {
@@ -267,8 +281,9 @@ async function checkWithPomelo(username) {
     pomeloCache.set(username, { status, expiresAt: Date.now() + 30000 });
     return status;
   };
-  const current = pomeloQueue.then(run, run);
-  pomeloQueue = current.catch(() => {});
+  if (pomeloInFlight.has(username)) return pomeloInFlight.get(username);
+  const current = run().finally(() => pomeloInFlight.delete(username));
+  pomeloInFlight.set(username, current);
   return current;
 }
 
@@ -308,10 +323,11 @@ app.post("/api/check-bulk", async (req, res) => {
   const usernames = [...new Set(input.map(name => name.trim().toLowerCase()))];
   const results = [];
   try {
-    for (const username of usernames) {
-      const status = await checkWithPomelo(username);
-      results.push({ username, status });
-    }
+    const checked = await Promise.all(usernames.map(async username => ({
+      username,
+      status: await checkWithPomelo(username)
+    })));
+    results.push(...checked);
     return res.json({ results, checked: results.length, total: usernames.length });
   } catch (error) {
     console.error("Pomelo bulk check failed:", error.message);

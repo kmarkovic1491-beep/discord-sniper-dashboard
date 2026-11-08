@@ -411,6 +411,59 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 .logout-confirm-actions{display:flex;gap:10px}
 .logout-confirm-actions .btn{flex:1;min-height:44px}
 </style>
+
+<style>
+/* DISCORD_TEXT_CONTRAST_V3 — crisp readable text in Discord palettes */
+:root[data-og-theme="dark"]{
+ --text:#ffffff!important;
+ --muted:#e3e6ec!important;
+}
+:root[data-og-theme="dark"] .brandtag,
+:root[data-og-theme="dark"] .crumb,
+:root[data-og-theme="dark"] .hero p,
+:root[data-og-theme="dark"] .statlabel,
+:root[data-og-theme="dark"] .paneldesc,
+:root[data-og-theme="dark"] .muted,
+:root[data-og-theme="dark"] .fieldlabel,
+:root[data-og-theme="dark"] .targetmeta,
+:root[data-og-theme="dark"] .empty,
+:root[data-og-theme="dark"] .navmobile button,
+:root[data-og-theme="dark"] .nav button,
+:root[data-og-theme="dark"] .sidehint,
+:root[data-og-theme="dark"] .settingline,
+:root[data-og-theme="dark"] .tutorial-card p,
+:root[data-og-theme="dark"] .tutorial-note{
+ color:#ffffff!important;
+}
+:root[data-og-theme="dark"] .tutorial-kicker,
+:root[data-og-theme="dark"] .eyebrow{color:#c4caff!important}
+
+/* Light mode keeps strong near-black text for contrast against its light surfaces. */
+:root[data-og-theme="light"]{
+ --text:#17191f!important;
+ --muted:#30343c!important;
+}
+:root[data-og-theme="light"] .brandtag,
+:root[data-og-theme="light"] .crumb,
+:root[data-og-theme="light"] .hero p,
+:root[data-og-theme="light"] .statlabel,
+:root[data-og-theme="light"] .paneldesc,
+:root[data-og-theme="light"] .muted,
+:root[data-og-theme="light"] .fieldlabel,
+:root[data-og-theme="light"] .targetmeta,
+:root[data-og-theme="light"] .empty,
+:root[data-og-theme="light"] .navmobile button,
+:root[data-og-theme="light"] .nav button,
+:root[data-og-theme="light"] .sidehint,
+:root[data-og-theme="light"] .settingline,
+:root[data-og-theme="light"] .tutorial-card p,
+:root[data-og-theme="light"] .tutorial-note{
+ color:#20232a!important;
+}
+:root[data-og-theme="light"] .tutorial-kicker,
+:root[data-og-theme="light"] .eyebrow{color:#3948bd!important}
+</style>
+
 </head>
 <body>
 <div class="shell">

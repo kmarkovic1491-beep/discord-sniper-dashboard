@@ -296,12 +296,18 @@ app.post("/api/check-bulk", async (req, res) => {
       return res.status(502).json({ error: "Apify returned invalid JSON." });
     }
     const items = Array.isArray(rows) ? rows : (Array.isArray(rows?.items) ? rows.items : [rows]);
-    const results = usernames.map(username => {
+    const results = usernames.map((username, index) => {
+      // The actor normally echoes each username. Some dataset rows omit that
+      // field, so use the matching position only when row counts line up.
       const row = items.find(item =>
-        String(item?.username || item?.input || item?.query || "").toLowerCase() === username.toLowerCase()
-      );
+        String(item?.username || item?.input || item?.query || "").trim().toLowerCase() === username.toLowerCase()
+      ) || (items.length === usernames.length ? items[index] : null);
       return { username, status: row && typeof row === "object" ? normalizeApifyStatus(row) : null };
     });
+    const unresolved = results.filter(item => !item.status).map(item => item.username);
+    if (unresolved.length) {
+      console.error("Apify bulk response missing clear status for", unresolved.length, "of", usernames.length, "usernames");
+    }
     return res.json({ results, checked: results.filter(item => item.status).length, total: usernames.length });
   } catch (error) {
     console.error("Apify bulk check failed:", error.message);

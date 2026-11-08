@@ -343,7 +343,6 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 #discordLoginBackdrop .discord-login-card p,
 #discordLoginBackdrop .login-brand-name,
 #discordLoginBackdrop label,
-#discordLoginBackdrop #ownerBypassStatus,
 #discordLoginBackdrop #discordLoginStatus,
 #discordLoginBackdrop #discordAccountState,
 #discordLoginBackdrop button{
@@ -403,11 +402,6 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 #discordLoginBackdrop #discordLoginButton{
  background:linear-gradient(135deg,var(--og-accent),var(--og-accent-2))!important;
  border-color:color-mix(in srgb,var(--og-accent-2) 65%,white)!important;
- color:#fff!important;
-}
-#discordLoginBackdrop #ownerBypassButton{
- background:color-mix(in srgb,var(--og-accent) 18%,#292b34)!important;
- border-color:color-mix(in srgb,var(--og-accent) 38%,rgba(255,255,255,.2))!important;
  color:#fff!important;
 }
 .theme-swatches span:nth-child(1),.theme-swatches span:nth-child(2){background:var(--og-accent)!important}
@@ -538,13 +532,6 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
   <div class="login-brand-name">SNIPERS OG</div>
   <h1>Sign in with Discord</h1>
   <p>Connect your Discord account to enter the dashboard. Once sign-in succeeds, your quick-start tutorial will begin.</p>
-  <button class="btn secondary" id="ownerBypassButton" type="button" style="width:100%;margin-top:14px">♛ Owner Only Bypass</button>
-  <div id="ownerBypassPanel" hidden style="margin-top:12px;text-align:left">
-   <label for="ownerBypassPassword" style="display:block;font-size:12px;margin-bottom:6px">Owner password</label>
-   <input id="ownerBypassPassword" type="password" autocomplete="current-password" placeholder="Enter owner password" style="width:100%;box-sizing:border-box">
-   <button class="btn" id="ownerBypassSubmit" type="button" style="width:100%;margin-top:9px">Unlock owner access</button>
-   <div id="ownerBypassStatus" class="discord-login-status" role="status"></div>
-  </div>
   <button class="btn discord-login-button" id="discordLoginButton" type="button">◉ Continue with Discord</button>
   <div class="discord-login-status" id="discordLoginStatus">Secure sign-in uses Discord OAuth. Your Discord password is never entered or stored here.</div>
  </div>
@@ -691,32 +678,14 @@ async function initializeDiscordAuth(){
  if(returnedSession){try{localStorage.setItem(DISCORD_SESSION_KEY,returnedSession)}catch(e){}history.replaceState(null,"",location.pathname+location.search)}
  const token=(()=>{try{return localStorage.getItem(DISCORD_SESSION_KEY)||""}catch(e){return""}})();
  if(!discordAuthControlsBound){
-  $("ownerBypassButton").addEventListener("click",()=>{const panel=$("ownerBypassPanel");panel.hidden=!panel.hidden;if(!panel.hidden)$("ownerBypassPassword").focus()});
-  $("ownerBypassSubmit").addEventListener("click",submitOwnerBypass);
-  $("ownerBypassPassword").addEventListener("keydown",e=>{if(e.key==="Enter")submitOwnerBypass()});
   $("discordLoginButton").addEventListener("click",()=>{location.href=discordApiRoot()+"/auth/discord"});
   $("discordLogout").addEventListener("click",()=>{$("discordLogoutConfirm").hidden=false;$("discordLogout").hidden=true});
   $("discordLogoutNo").addEventListener("click",()=>{$("discordLogoutConfirm").hidden=true;$("discordLogout").hidden=false});
   $("discordLogoutYes").addEventListener("click",()=>{$("discordLogoutConfirm").hidden=true;try{localStorage.removeItem(DISCORD_SESSION_KEY)}catch(e){}discordUser=null;$("discordAccountState").textContent="Signed out. Sign in again to continue.";$("discordLoginStatus").textContent="Sign in with Discord to open SNIPERS OG.";$("discordLoginButton").disabled=false;setDiscordLoginVisible(true);$("tutorialBackdrop").classList.remove("open")});
   discordAuthControlsBound=true;
  }
- async function submitOwnerBypass(){
-  const password=$("ownerBypassPassword").value;
-  const status=$("ownerBypassStatus");
-  if(!password){status.textContent="Enter the owner password.";return}
-  $("ownerBypassSubmit").disabled=true;status.textContent="Verifying owner access…";
-  try{
-   const response=await fetch(discordApiRoot()+"/auth/owner-bypass",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password}),cache:"no-store"});
-   const data=await response.json();
-   if(!response.ok||!data.success||!data.token)throw Error(data.error||"Owner access was not accepted.");
-   localStorage.setItem(DISCORD_SESSION_KEY,data.token);
-   $("ownerBypassPassword").value="";
-   await initializeDiscordAuth();
-  }catch(error){status.textContent=error.message||"Could not verify owner access."}
-  finally{$("ownerBypassSubmit").disabled=false}
- }
 
- if(!token){setDiscordLoginVisible(true);$("discordAccountState").textContent="Not signed in.";try{const c=await fetch(discordApiRoot()+"/auth/config");const cfg=await c.json();if(!cfg.configured){$("discordLoginStatus").textContent="Discord OAuth is not set up yet. Owner access can still work independently.";$("discordLoginButton").disabled=true;}if(!cfg.ownerBypassConfigured){$("ownerBypassStatus").textContent="Owner sign-in is temporarily unavailable. You can still try again shortly.";}}catch(e){$("discordLoginStatus").textContent="Could not reach the sign-in server. Check the Render backend URL in Settings.";$("discordLoginButton").disabled=true}return}
+ if(!token){setDiscordLoginVisible(true);$("discordAccountState").textContent="Not signed in.";try{const c=await fetch(discordApiRoot()+"/auth/config");const cfg=await c.json();if(!cfg.configured){$("discordLoginStatus").textContent="Discord OAuth is not configured yet.";$("discordLoginButton").disabled=true;}}catch(e){$("discordLoginStatus").textContent="Could not reach the sign-in server. Check the Render backend URL in Settings.";$("discordLoginButton").disabled=true}return}
  try{
   const response=await fetch(discordApiRoot()+"/auth/me",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
   if(!response.ok)throw Error("Session expired");

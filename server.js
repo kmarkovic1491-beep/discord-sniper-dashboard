@@ -241,6 +241,62 @@ app.get("/health", (req, res) => {
   res.json({ status: "online", checker: "ready" });
 });
 
+
+function normalizeApifyStatus(row) {
+  const rawStatus = String(row.status || row.availability || row.result || "").toLowerCase();
+  if (rawStatus.includes("available") || row.available === true || row.isAvailable === true) return "available";
+  if (rawStatus.includes("taken") || row.taken === true || row.available === false || row.isAvailable === false) return "taken";
+  if (rawStatus.includes("invalid") || row.valid === false) return "invalid";
+  return null;
+}
+
+// Batch availability check: one Apify actor run for up to 50 usernames.
+app.post("/api/check-bulk", async (req, res) => {
+  const input = req.body?.usernames;
+  if (!Array.isArray(input) || input.length < 1 || input.length > 50 ||
+      input.some(name => typeof name !== "string" || !/^[a-z0-9._]{2,32}$/i.test(name.trim()))) {
+    return res.status(400).json({ error: "Send between 1 and 50 valid usernames." });
+  }
+  if (!process.env.APIFY_TOKEN) {
+    return res.status(503).json({ error: "APIFY_TOKEN is not configured on the Render service." });
+  }
+  const usernames = [...new Set(input.map(name => name.trim()))];
+  try {
+    const upstream = await fetch(
+      "https://api.apify.com/v2/acts/maged120~discord-username-checker/run-sync-get-dataset-items?format=json&clean=true",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + process.env.APIFY_TOKEN,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ usernames }),
+        signal: AbortSignal.timeout(60000)
+      }
+    );
+    const raw = await upstream.text();
+    if (!upstream.ok) {
+      console.error("Apify bulk request failed with HTTP", upstream.status);
+      return res.status(502).json({ error: "Apify bulk checker failed (HTTP " + upstream.status + ")." });
+    }
+    let rows;
+    try { rows = JSON.parse(raw); } catch {
+      return res.status(502).json({ error: "Apify returned invalid JSON." });
+    }
+    const items = Array.isArray(rows) ? rows : (Array.isArray(rows?.items) ? rows.items : [rows]);
+    const results = usernames.map(username => {
+      const row = items.find(item =>
+        String(item?.username || item?.input || item?.query || "").toLowerCase() === username.toLowerCase()
+      );
+      return { username, status: row && typeof row === "object" ? normalizeApifyStatus(row) : null };
+    });
+    return res.json({ results, checked: results.filter(item => item.status).length, total: usernames.length });
+  } catch (error) {
+    console.error("Apify bulk check failed:", error.message);
+    return res.status(502).json({ error: "Could not complete the Apify bulk check." });
+  }
+});
+
 // Apify-backed username availability check
 app.post("/api/check", async (req, res) => {
   const username = String(req.body?.username || "").trim();

@@ -200,6 +200,22 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 @keyframes ogTutorialRise{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.discord-login-backdrop.welcome-loading .discord-login-card{animation:none!important}.discord-login-backdrop.welcome-exit{transition:none!important}}
 
+
+/* SNIPERS_LOGIN_TUTORIAL_TRANSITION_V2 — explicit animations for Safari/iOS */
+.login-brand-name{font-size:12px;letter-spacing:2.4px;font-weight:950;color:var(--text);margin:2px 0 8px}
+.discord-login-backdrop.welcome-exit{animation:snLoginFadeOut .52s ease both!important}
+.discord-login-backdrop.welcome-exit .discord-login-card{animation:snLoginCardOut .52s ease both!important}
+@keyframes snLoginFadeOut{from{opacity:1;visibility:visible}to{opacity:0;visibility:hidden}}
+@keyframes snLoginCardOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-9px) scale(.985)}}
+.tutorial-backdrop.opening{animation:snTutorialFadeIn .68s ease both!important}
+.tutorial-backdrop.opening .tutorial-card{animation:snTutorialCardIn .72s cubic-bezier(.2,.8,.2,1) both!important}
+.tutorial-backdrop.closing{animation:snTutorialFadeOut .36s ease both!important;visibility:visible!important}
+.tutorial-backdrop.closing .tutorial-card{animation:snTutorialCardOut .36s ease both!important}
+@keyframes snTutorialFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes snTutorialCardIn{from{opacity:0;transform:translateY(20px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes snTutorialFadeOut{from{opacity:1}to{opacity:0}}
+@keyframes snTutorialCardOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(12px) scale(.985)}}
+@media(prefers-reduced-motion:reduce){.discord-login-backdrop.welcome-exit,.discord-login-backdrop.welcome-exit .discord-login-card,.tutorial-backdrop.opening,.tutorial-backdrop.opening .tutorial-card,.tutorial-backdrop.closing,.tutorial-backdrop.closing .tutorial-card{animation:none!important}}
 </style>
 </head>
 <body>
@@ -230,7 +246,7 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 <div class="discord-login-backdrop" id="discordLoginBackdrop">
  <div class="discord-login-card">
   <div class="discord-login-mark">☾</div>
-  <div class="tutorial-kicker">SNIPERS OG · CRIMSON MOON</div>
+  <div class="login-brand-name">SNIPERS OG</div>
   <h1>Sign in with Discord</h1>
   <p>Connect your Discord account to enter the dashboard. Once sign-in succeeds, your quick-start tutorial will begin.</p>
   <button class="btn secondary" id="ownerBypassButton" type="button" style="width:100%;margin-top:14px">♛ Owner Only Bypass</button>
@@ -342,8 +358,8 @@ function renderTutorial(){
  $("tutorialNext").textContent=tutorialIndex===tutorialSteps.length-1?"Finish ✓":"Next →";
  $("tutorialOpenSection").textContent="Open "+({dashboard:"Overview",watchlist:"Names",generator:"Idea generator",settings:"Settings"}[step.section]);
 }
-function openTutorial(){const backdrop=$("tutorialBackdrop");backdrop.classList.remove("closing");tutorialIndex=0;renderTutorial();backdrop.classList.add("open")}
-function closeTutorial(markSeen=true){const backdrop=$("tutorialBackdrop");if(backdrop.classList.contains("open")){backdrop.classList.add("closing");setTimeout(()=>{backdrop.classList.remove("open","closing")},280)}if(markSeen){try{localStorage.setItem("snipers-og-discord-tutorial-seen-v1","1")}catch(e){}}}
+function openTutorial(){const backdrop=$("tutorialBackdrop");backdrop.classList.remove("closing","opening");tutorialIndex=0;renderTutorial();backdrop.classList.add("open");void backdrop.offsetWidth;backdrop.classList.add("opening");setTimeout(()=>backdrop.classList.remove("opening"),760)}
+function closeTutorial(markSeen=true){const backdrop=$("tutorialBackdrop");if(backdrop.classList.contains("open")){backdrop.classList.remove("opening");backdrop.classList.add("closing");setTimeout(()=>{backdrop.classList.remove("open","closing")},380)}if(markSeen){try{localStorage.setItem("snipers-og-discord-tutorial-seen-v2","1")}catch(e){}}}
 function openTutorialSection(){const section=tutorialSteps[tutorialIndex].section;closeTutorial(true);setTimeout(()=>show(section),140)}
 $("tutorialNext").addEventListener("click",()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()});
 $("tutorialBack").addEventListener("click",()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}});
@@ -433,8 +449,9 @@ async function initializeDiscordAuth(){
   $("discordLoginStatus").textContent="Checking your session · loading your workspace…";
   await new Promise(resolve=>setTimeout(resolve,3000));
   $("discordLoginBackdrop").classList.remove("welcome-loading");
+  void $("discordLoginBackdrop").offsetWidth;
   $("discordLoginBackdrop").classList.add("welcome-exit");
-  await new Promise(resolve=>setTimeout(resolve,450));
+  await new Promise(resolve=>setTimeout(resolve,540));
   $("discordLoginBackdrop").hidden=true;
   $("discordLoginBackdrop").classList.remove("welcome-exit");
   $("discordLoginButton").disabled=false;

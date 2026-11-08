@@ -155,7 +155,11 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 
 /* SNIPERS_FIRST_RUN_TUTORIAL_V1 */
 .tutorial-backdrop{position:fixed;inset:0;z-index:1000000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(4,3,9,.76);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-.tutorial-backdrop.open{display:flex}
+.tutorial-backdrop.open{display:flex;opacity:1;transition:opacity .28s ease}
+.tutorial-backdrop{opacity:0;transition:opacity .28s ease}
+.tutorial-backdrop.closing{opacity:0;pointer-events:none}
+.tutorial-card{transition:transform .28s ease,opacity .28s ease}
+.tutorial-backdrop.closing .tutorial-card{transform:translateY(10px) scale(.985);opacity:0}
 .tutorial-card{width:min(560px,100%);max-height:min(82vh,720px);overflow:auto;border:1px solid rgba(255,255,255,.2);border-radius:26px;padding:24px;background:linear-gradient(145deg,rgba(70,37,65,.92),rgba(15,14,25,.96));box-shadow:0 28px 90px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.2);color:var(--text)}
 .tutorial-kicker{font-size:10px;letter-spacing:2px;color:#ff8ba5;font-weight:900}
 .tutorial-card h2{font-size:25px;line-height:1.15;margin:9px 0}
@@ -336,12 +340,13 @@ function renderTutorial(){
  $("tutorialNext").textContent=tutorialIndex===tutorialSteps.length-1?"Finish ✓":"Next →";
  $("tutorialOpenSection").textContent="Open "+({dashboard:"Overview",watchlist:"Names",generator:"Idea generator",settings:"Settings"}[step.section]);
 }
-function openTutorial(){tutorialIndex=0;renderTutorial();$("tutorialBackdrop").classList.add("open")}
-function closeTutorial(markSeen=true){$("tutorialBackdrop").classList.remove("open");if(markSeen){try{localStorage.setItem("snipers-og-discord-tutorial-seen-v1","1")}catch(e){}}}
+function openTutorial(){const backdrop=$("tutorialBackdrop");backdrop.classList.remove("closing");tutorialIndex=0;renderTutorial();backdrop.classList.add("open")}
+function closeTutorial(markSeen=true){const backdrop=$("tutorialBackdrop");if(backdrop.classList.contains("open")){backdrop.classList.add("closing");setTimeout(()=>{backdrop.classList.remove("open","closing")},280)}if(markSeen){try{localStorage.setItem("snipers-og-discord-tutorial-seen-v1","1")}catch(e){}}}
+function openTutorialSection(){const section=tutorialSteps[tutorialIndex].section;closeTutorial(true);setTimeout(()=>show(section),140)}
 $("tutorialNext").addEventListener("click",()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()});
 $("tutorialBack").addEventListener("click",()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}});
 $("tutorialSkip").addEventListener("click",()=>closeTutorial());
-$("tutorialOpenSection").addEventListener("click",()=>show(tutorialSteps[tutorialIndex].section));
+$("tutorialOpenSection").addEventListener("click",openTutorialSection);
 $("replayTutorial").addEventListener("click",openTutorial);
 $("tutorialBackdrop").addEventListener("click",e=>{if(e.target===$("tutorialBackdrop"))closeTutorial()});
 

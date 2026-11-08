@@ -184,6 +184,10 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 :root[data-og-theme] .brandmark{color:#fff!important;background:linear-gradient(145deg,var(--og-accent),var(--og-accent-2))!important;border-color:var(--og-accent)!important;box-shadow:0 0 25px var(--og-accent)!important}
 :root[data-og-theme] .brandname span{color:var(--og-accent-2)!important}
 :root[data-og-theme] .nav button.active,:root[data-og-theme] .navmobile button.active{background:var(--og-accent)!important;border-color:var(--og-accent-2)!important}
+/* Keep selected navigation tabs neutral instead of rendering a bright red button. */
+:root[data-og-theme] .nav button.active,:root[data-og-theme] .navmobile button.active{background:rgba(255,255,255,.09)!important;border-color:rgba(255,255,255,.2)!important;color:var(--text)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important}
+:root[data-og-theme] .navmobile button.active{color:var(--text)!important}
+:root[data-og-theme="light"] .nav button.active,:root[data-og-theme="light"] .navmobile button.active{background:rgba(88,101,242,.10)!important;border-color:rgba(88,101,242,.24)!important;color:#303caa!important}
 :root[data-og-theme] .nav button span,:root[data-og-theme] .moon,:root[data-og-theme] .eyebrow{color:var(--og-accent-2)!important}
 :root[data-og-theme] .moon{background:var(--og-accent)!important;border-color:var(--og-accent-2)!important}
 

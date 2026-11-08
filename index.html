@@ -368,6 +368,42 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 .sound-panel .settingline{gap:12px}
 </style>
 
+
+<style>
+/* THEME CONSISTENCY: login gate and theme swatches follow the active preset.
+   Keep the login card dark so the requested white copy stays readable. */
+#discordLoginBackdrop{
+ background:
+  radial-gradient(ellipse at 18% 12%,color-mix(in srgb,var(--og-accent) 30%,transparent),transparent 40%),
+  radial-gradient(ellipse at 88% 80%,color-mix(in srgb,var(--og-accent-2) 22%,transparent),transparent 42%),
+  #090a10!important;
+}
+#discordLoginBackdrop .discord-login-card{
+ background:linear-gradient(145deg,rgba(43,45,55,.96),rgba(20,21,29,.98))!important;
+ border-color:color-mix(in srgb,var(--og-accent) 42%,rgba(255,255,255,.18))!important;
+ box-shadow:0 28px 90px rgba(0,0,0,.55),0 0 44px color-mix(in srgb,var(--og-accent) 12%,transparent),inset 0 1px rgba(255,255,255,.2)!important;
+}
+#discordLoginBackdrop .discord-login-mark{
+ background:linear-gradient(145deg,var(--og-accent),var(--og-accent-2))!important;
+ box-shadow:0 12px 35px color-mix(in srgb,var(--og-accent) 28%,transparent)!important;
+}
+#discordLoginBackdrop #discordLoginButton{
+ background:linear-gradient(135deg,var(--og-accent),var(--og-accent-2))!important;
+ border-color:color-mix(in srgb,var(--og-accent-2) 65%,white)!important;
+ color:#fff!important;
+}
+#discordLoginBackdrop #ownerBypassButton{
+ background:color-mix(in srgb,var(--og-accent) 18%,#292b34)!important;
+ border-color:color-mix(in srgb,var(--og-accent) 38%,rgba(255,255,255,.2))!important;
+ color:#fff!important;
+}
+.theme-swatches span:nth-child(1),.theme-swatches span:nth-child(2){background:var(--og-accent)!important}
+.theme-swatches span:nth-child(3){background:var(--og-accent-2)!important}
+.theme-swatches span:nth-child(4){background:var(--panel2)!important}
+.theme-swatches span:nth-child(5){background:var(--text)!important}
+.theme-swatches span:nth-child(6){background:var(--bg)!important}
+</style>
+
 </head>
 <body>
 <div class="shell">

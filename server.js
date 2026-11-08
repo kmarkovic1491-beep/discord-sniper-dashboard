@@ -27,7 +27,8 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
   res.json({
     status: "online",
-    checker: "ready",
+    checker: "Pomelo V2",
+    provider: "Pomelo V2",
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL),
   });
 });
@@ -143,7 +144,7 @@ app.post("/notify", async (req, res) => {
 
 // Render health check
 app.get("/health", (req, res) => {
-  res.json({ status: "online", checker: "ready" });
+  res.json({ status: "online", checker: "Pomelo V2", provider: "Pomelo V2" });
 });
 
 
@@ -238,6 +239,19 @@ app.post("/api/check", async (req, res) => {
   } catch (error) {
     console.error("Pomelo check failed:", error.message);
     return res.status(error.statusCode || 502).json({ error: error.message });
+  }
+});
+
+// Read-only GET endpoint for manual diagnostics and simple integrations.
+app.get("/api/check", async (req, res) => {
+  const username = String(req.query?.username || "").trim().toLowerCase();
+  if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid Discord username." });
+  try {
+    const status = await checkWithPomelo(username);
+    return res.json({ username, status, provider: "Pomelo V2" });
+  } catch (error) {
+    console.error("Pomelo check failed:", error.message);
+    return res.status(error.statusCode || 502).json({ error: error.message, provider: "Pomelo V2" });
   }
 });
 

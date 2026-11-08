@@ -72,7 +72,7 @@ function clearOAuthState(res) {
 }
 app.get("/auth/config", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.json({ configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI && process.env.DISCORD_SESSION_SECRET) });
+  res.json({ configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI && process.env.DISCORD_SESSION_SECRET), ownerBypassConfigured: Boolean(process.env.OWNER_BYPASS_PASSWORD && process.env.DISCORD_SESSION_SECRET) });
 });
 app.get("/auth/discord", (req, res) => {
   const { DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, DISCORD_CLIENT_SECRET, DISCORD_SESSION_SECRET } = process.env;

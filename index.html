@@ -267,7 +267,10 @@ let ideas=[];
 const THEME_LABELS={crimson:"Crimson Moon · dark glass with crimson accents.",dark:"Discord Dark · classic charcoal interface with Blurple accents.",light:"Discord Light · bright neutral surfaces.",ash:"Discord Ash · soft graphite surfaces.",onyx:"Discord Onyx · deep near-black OLED look.",midnight:"Midnight Blue · navy surfaces and blue accents.",blurple:"Blurple · Discord-inspired purple-blue palette.",emerald:"Emerald · dark green surfaces.",rose:"Rose Quartz · dark rose surfaces."};
 function applyOgTheme(theme){const allowed=Object.prototype.hasOwnProperty.call(THEME_LABELS,theme)?theme:"crimson";const accents={crimson:["#e11d48","#fb4567"],dark:["#5865f2","#8b96ff"],light:["#5865f2","#7985ff"],ash:["#8995a8","#c2cad7"],onyx:["#a1a1aa","#e4e4e7"],midnight:["#3b82f6","#93c5fd"],blurple:["#5865f2","#a5adff"],emerald:["#10b981","#6ee7b7"],rose:["#db2777","#f9a8d4"]};const pair=accents[allowed]||accents.crimson;document.documentElement.dataset.ogTheme=allowed;document.documentElement.style.setProperty("--og-accent",pair[0]);document.documentElement.style.setProperty("--og-accent-2",pair[1]);const picker=$("themeSelect");if(picker&&picker.value!==allowed)picker.value=allowed;const desc=$("themeDescription");if(desc)desc.textContent=THEME_LABELS[allowed];document.querySelector('meta[name="theme-color"]')?.setAttribute("content",allowed==="light"?"#f2f3f5":pair[0]);return allowed}
 state.theme=applyOgTheme(state.theme||"crimson");
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));return true}catch(e){toast("Could not save: browser storage is full or unavailable.");return false}}
+let cloudSyncEnabled=false,cloudSaveTimer=null,cloudSaveWarningShown=false;
+async function saveCloudNow(token){const response=await fetch(discordApiRoot()+"/api/state",{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({state}),cache:"no-store"});if(!response.ok)throw Error("Cloud save failed");return true}
+function queueCloudSave(){if(!cloudSyncEnabled)return;if(cloudSaveTimer)clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(async()=>{try{const token=localStorage.getItem("snipers-og-discord-session-v1")||"";if(token)await saveCloudNow(token)}catch(e){if(!cloudSaveWarningShown){cloudSaveWarningShown=true;toast("Cloud save is temporarily unavailable. Your changes remain on this device.")}}},800)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));queueCloudSave();return true}catch(e){toast("Could not save: browser storage is full or unavailable.");return false}}
 let toastHideTimer=null;function toast(m){const x=$("toast");x.textContent=m;x.style.display="block";x.classList.remove("toast-out");void x.offsetWidth;x.classList.add("toast-in");if(toastHideTimer)clearTimeout(toastHideTimer);toastHideTimer=setTimeout(()=>{x.classList.remove("toast-in");x.classList.add("toast-out");setTimeout(()=>{x.style.display="none";x.classList.remove("toast-out")},220)},3000)}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function badge(s){return '<span class="badge '+esc(String(s).toLowerCase())+'">'+esc(s)+'</span>'}
@@ -348,6 +351,25 @@ let discordUser=null;
 let discordAuthControlsBound=false;
 function discordApiRoot(){return String(state.pomeloWorkerUrl||"https://snipers-og-apify-checker.onrender.com").trim().replace(/\/$/,"")}
 function setDiscordLoginVisible(visible){$("discordLoginBackdrop").hidden=!visible}
+async function syncCloudState(token){
+ cloudSyncEnabled=false;
+ try{
+  const response=await fetch(discordApiRoot()+"/api/state",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
+  if(!response.ok)return false;
+  const data=await response.json();
+  if(data.state&&typeof data.state==="object"){
+   state=Object.assign(state,data.state);
+   if(!Array.isArray(state.targets))state.targets=[];
+   if(!Array.isArray(state.history))state.history=[];
+   state.theme=applyOgTheme(state.theme||"crimson");
+   try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
+   render();
+  }
+  cloudSyncEnabled=true;
+  if(!data.state)await saveCloudNow(token);
+  return true;
+ }catch(e){cloudSyncEnabled=false;return false}
+}
 function showDiscordUser(user){discordUser=user;const display=String(user.global_name||user.username||"Discord user");const handle=String(user.username||"");const avatar=user.avatar&&user.id!=="snipers-og-owner"?"https://cdn.discordapp.com/avatars/"+encodeURIComponent(user.id)+"/"+encodeURIComponent(user.avatar)+".png?size=96":"https://cdn.discordapp.com/embed/avatars/0.png";$("discordAccountState").innerHTML='<div style="display:flex;align-items:center;gap:12px"><img src="'+avatar+'" alt="" width="48" height="48" style="width:48px;height:48px;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer"><div><strong style="display:block;color:var(--text)">'+esc(display)+'</strong><span>'+(user.is_owner? "SNIPERS OG owner access":"@"+esc(handle))+(user.is_owner?"":" · Discord account")+(user.is_owner?"":" · ID "+esc(user.id))+'</span></div></div>';$("discordLoginStatus").textContent="Signed in as "+display+". Your quick-start tutorial is ready.";setDiscordLoginVisible(false)}
 async function initializeDiscordAuth(){
  const params=new URLSearchParams(location.hash.replace(/^#/,""));
@@ -383,7 +405,7 @@ async function initializeDiscordAuth(){
   const response=await fetch(discordApiRoot()+"/auth/me",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
   if(!response.ok)throw Error("Session expired");
   const data=await response.json();if(!data.authenticated||!data.user)throw Error("Not authenticated");
-  showDiscordUser(data.user);
+  showDiscordUser(data.user);await syncCloudState(token);
   $("discordLoginBackdrop").hidden=false;
   $("discordLoginBackdrop").classList.remove("welcome-exit");
   $("discordLoginBackdrop").classList.add("welcome-loading");

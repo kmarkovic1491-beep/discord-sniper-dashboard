@@ -214,10 +214,18 @@ async function checkWithLegacyPomelo(username) {
   let data;
   try { data = JSON.parse(raw); } catch { throw new Error("Legacy Pomelo endpoint returned non-JSON (HTTP " + response.status + ")."); }
   if (!response.ok) throw new Error("Legacy Pomelo endpoint returned HTTP " + response.status + ".");
-  const code = data?.data?.check?.status;
+  const check = data?.data?.check;
+  const code = check?.status;
   if (code === 2) return "available";
   if (code === 3) return "taken";
-  if (code === 0) return "invalid";
+  if (code === 0) {
+    const errors = Array.isArray(check?.errors) ? check.errors.map(x => String(x?.code || x?.error || x)).join(", ") : String(check?.errors || "");
+    if (/NOT_NORMAL_NAME|BAD_LENGTH|INVALID_CHARS|REPEATING_DOTS|BLACKLISTED_WORD/i.test(errors)) {
+      throw new Error("Username is not eligible for this free provider: " + errors);
+    }
+    throw new Error("Legacy provider rejected the username without a definitive availability result" + (errors ? ": " + errors : "."));
+  }
+  if (code === 1) throw new Error("Legacy provider could not verify this username. No availability result was recorded.");
   throw new Error("Legacy Pomelo endpoint did not return a definitive availability status.");
 }
 
@@ -241,13 +249,18 @@ async function checkWithPomelo(username) {
     try { payload = JSON.parse(raw); } catch { throw new Error("Pomelo returned invalid JSON (HTTP " + upstream.status + ")."); }
     if (upstream.status === 429) throw Object.assign(new Error("Pomelo free-tier limit reached. Wait before scanning again."), { statusCode: 429 });
     if (!upstream.ok) {
-      if (upstream.status >= 500) {
-        console.warn("Pomelo V2 server error; trying legacy public endpoint.");
-        const legacyStatus = await checkWithLegacyPomelo(username);
-        pomeloCache.set(username, { status: legacyStatus, expiresAt: Date.now() + 15000 });
-        return legacyStatus;
+      const detail = String(payload?.message || payload?.error || payload?.detail || raw || upstream.statusText || "unknown API error").slice(0, 240);
+      if (upstream.status >= 500 || upstream.status === 400 || upstream.status === 404) {
+        console.warn("Pomelo V2 returned HTTP " + upstream.status + "; trying documented legacy compatibility endpoint. Detail: " + detail);
+        try {
+          const legacyStatus = await checkWithLegacyPomelo(username);
+          pomeloCache.set(username, { status: legacyStatus, expiresAt: Date.now() + 15000 });
+          return legacyStatus;
+        } catch (legacyError) {
+          throw new Error("Pomelo V2 HTTP " + upstream.status + " (" + detail + "). Legacy fallback: " + legacyError.message);
+        }
       }
-      throw new Error("Pomelo rejected the lookup (HTTP " + upstream.status + "): " + String(payload?.message || payload?.error || "unknown API error").slice(0, 180));
+      throw new Error("Pomelo rejected the lookup (HTTP " + upstream.status + "): " + detail);
     }
     const status = normalizePomeloStatus(payload);
     if (!status) throw new Error("Pomelo response did not contain a recognized availability status. No result was marked available.");

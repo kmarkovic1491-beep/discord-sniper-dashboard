@@ -72,7 +72,7 @@ function clearOAuthState(res) {
 }
 app.get("/auth/config", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.json({ configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI && process.env.DISCORD_SESSION_SECRET), ownerBypassConfigured: Boolean(process.env.OWNER_BYPASS_PASSWORD && process.env.DISCORD_SESSION_SECRET) });
+  res.json({ configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_REDIRECT_URI && process.env.DISCORD_SESSION_SECRET) });
 });
 app.get("/auth/discord", (req, res) => {
   const { DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, DISCORD_CLIENT_SECRET, DISCORD_SESSION_SECRET } = process.env;
@@ -118,31 +118,6 @@ app.get("/auth/discord/callback", async (req, res) => {
     return res.status(502).send("Discord sign-in failed. Please try again.");
   }
 });
-/* SNIPERS_OWNER_BYPASS_V1 — password remains server-side; rate-limited per IP. */
-const ownerBypassAttempts = new Map();
-app.post("/auth/owner-bypass", (req, res) => {
-  res.setHeader("Cache-Control", "no-store");
-  const configuredPassword = process.env.OWNER_BYPASS_PASSWORD;
-  if (!configuredPassword || !process.env.DISCORD_SESSION_SECRET) {
-    return res.status(503).json({ success: false, error: "Owner bypass is not configured." });
-  }
-  const ip = req.ip || req.socket.remoteAddress || "unknown";
-  const now = Date.now();
-  const record = ownerBypassAttempts.get(ip) || { count: 0, resetAt: now + 15 * 60 * 1000 };
-  if (now > record.resetAt) { record.count = 0; record.resetAt = now + 15 * 60 * 1000; }
-  if (record.count >= 5) return res.status(429).json({ success: false, error: "Too many attempts. Try again in 15 minutes." });
-  record.count++;
-  ownerBypassAttempts.set(ip, record);
-  const supplied = typeof req.body?.password === "string" ? req.body.password : "";
-  const expectedBuffer = Buffer.from(configuredPassword);
-  const suppliedBuffer = Buffer.from(supplied);
-  const valid = expectedBuffer.length === suppliedBuffer.length && crypto.timingSafeEqual(expectedBuffer, suppliedBuffer);
-  if (!valid) return res.status(401).json({ success: false, error: "Incorrect owner password." });
-  ownerBypassAttempts.delete(ip);
-  const session = signSession({ sub: "snipers-og-owner", username: "owner", global_name: "Owner", avatar: null, is_owner: true, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS });
-  return res.json({ success: true, token: session, user: { id: "snipers-og-owner", username: "owner", global_name: "Owner", is_owner: true } });
-});
-
 app.get("/auth/me", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const auth = String(req.headers.authorization || "");

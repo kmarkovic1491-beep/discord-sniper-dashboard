@@ -309,33 +309,63 @@ app.post("/notify", async (req, res) => {
 });
 
 
-// First-party SNIPERS OG API. Discord does not expose a supported public
-// username-availability lookup endpoint, so this API must not guess results
-// or call private/undocumented endpoints. Keep routes explicit and safe.
-function availabilityUnavailable(res) {
-  return res.status(501).json({
-    error: "Live username availability is not available through Discord's supported public API. No result was guessed or recorded.",
-    code: "LIVE_AVAILABILITY_UNSUPPORTED",
-    checked: false
-  });
-}
-app.post("/api/check", (req, res) => {
+// SNIPERS OG experimental single-name checker.
+// ClaimCord references Discord's undocumented unauthenticated signup-check route.
+// This is unofficial and may stop working at any time. No proxies, account tokens,
+// parallel requests, or rate-limit bypasses are used. Bulk scanning stays disabled.
+let lastAvailabilityRequestAt = 0;
+const availabilityLastByIp = new Map();
+const AVAILABILITY_GLOBAL_GAP_MS = 1500;
+const AVAILABILITY_IP_GAP_MS = 3000;
+app.post("/api/check", async (req, res) => {
   const username = String(req.body?.username || "").trim().toLowerCase();
-  if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid username." });
-  return availabilityUnavailable(res);
+  if (!/^[a-z0-9._]{2,32}$/.test(username) || username.startsWith(".") || username.endsWith(".") || username.includes("..")) {
+    return res.status(400).json({ status: "INVALID", checked: false, error: "Enter a valid Discord username." });
+  }
+  const now = Date.now();
+  const ip = String(req.ip || "unknown");
+  const wait = Math.max(0, AVAILABILITY_GLOBAL_GAP_MS - (now - lastAvailabilityRequestAt), AVAILABILITY_IP_GAP_MS - (now - (availabilityLastByIp.get(ip) || 0)));
+  if (wait > 0) return res.status(429).json({ status: "UNCONFIRMED", checked: false, retryAfterMs: wait, error: "Please wait before checking another username. The checker does not bypass Discord rate limits." });
+  lastAvailabilityRequestAt = now;
+  availabilityLastByIp.set(ip, now);
+  try {
+    const upstream = await fetch("https://discord.com/api/v9/unique-username/username-attempt-unauthed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json", "User-Agent": "SNIPERS-OG-Username-Checker/1.0" },
+      body: JSON.stringify({ username }),
+      signal: AbortSignal.timeout(10000)
+    });
+    let payload = {};
+    try { payload = await upstream.json(); } catch (_) {}
+    if (upstream.status === 429) {
+      const retryHeader = Number(upstream.headers.get("retry-after") || 0);
+      const retryAfterMs = Math.max(3000, retryHeader > 0 ? retryHeader * 1000 : 10000);
+      return res.status(429).json({ status: "UNCONFIRMED", checked: false, retryAfterMs, error: "Discord rate-limited this check. Wait before trying again." });
+    }
+    if (!upstream.ok) {
+      return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Discord's unofficial check endpoint returned HTTP " + upstream.status + ". No availability result was recorded." });
+    }
+    if (typeof payload.taken !== "boolean") {
+      return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Discord returned an unexpected response. No availability result was recorded." });
+    }
+    return res.json({
+      username,
+      status: payload.taken ? "TAKEN" : "AVAILABLE",
+      checked: true,
+      checkedAt: new Date().toISOString(),
+      source: "discord-unofficial-signup-check",
+      note: "Unofficial point-in-time result; it does not reserve the username."
+    });
+  } catch (error) {
+    console.error("Unofficial username check failed:", error.message);
+    return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Could not reach Discord's unofficial check endpoint. Try again later." });
+  }
 });
 app.get("/api/check", (req, res) => {
-  const username = String(req.query?.username || "").trim().toLowerCase();
-  if (!/^[a-z0-9._]{2,32}$/.test(username)) return res.status(400).json({ error: "Enter a valid username." });
-  return availabilityUnavailable(res);
+  return res.status(405).json({ status: "UNCONFIRMED", checked: false, error: "Use POST to check one username." });
 });
 app.post("/api/check-bulk", (req, res) => {
-  const input = req.body?.usernames;
-  if (!Array.isArray(input) || input.length < 1 || input.length > 25 ||
-      input.some(name => typeof name !== "string" || !/^[a-z0-9._]{2,32}$/i.test(name.trim()))) {
-    return res.status(400).json({ error: "Send between 1 and 25 valid usernames." });
-  }
-  return availabilityUnavailable(res);
+  return res.status(501).json({ status: "UNCONFIRMED", checked: false, error: "Bulk live checking is disabled. Check one username at a time." });
 });
 
 const PORT = process.env.PORT || 3000;

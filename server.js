@@ -208,7 +208,7 @@ async function checkWithLegacyPomelo(username) {
   const url = "https://api.lixqa.de/v3/discord/pomelo/" + encodeURIComponent(username);
   const response = await fetch(url, {
     headers: { "Accept": "application/json", "User-Agent": "SNIPERS-OG-Pomelo-Checker/1.0" },
-    signal: AbortSignal.timeout(15000)
+    signal: AbortSignal.timeout(6000)
   });
   const raw = await response.text();
   let data;
@@ -250,8 +250,8 @@ async function checkWithPomelo(username) {
     if (upstream.status === 429) throw Object.assign(new Error("Pomelo free-tier limit reached. Wait before scanning again."), { statusCode: 429 });
     if (!upstream.ok) {
       const detail = String(payload?.message || payload?.error || payload?.detail || raw || upstream.statusText || "unknown API error").slice(0, 240);
-      if (upstream.status >= 500 || upstream.status === 400 || upstream.status === 404) {
-        console.warn("Pomelo V2 returned HTTP " + upstream.status + "; trying documented legacy compatibility endpoint. Detail: " + detail);
+      if (upstream.status >= 500) {
+        console.warn("Pomelo V2 returned HTTP " + upstream.status + "; trying legacy compatibility endpoint. Detail: " + detail);
         try {
           const legacyStatus = await checkWithLegacyPomelo(username);
           pomeloCache.set(username, { status: legacyStatus, expiresAt: Date.now() + 15000 });
@@ -260,7 +260,7 @@ async function checkWithPomelo(username) {
           throw new Error("Pomelo V2 HTTP " + upstream.status + " (" + detail + "). Legacy fallback: " + legacyError.message);
         }
       }
-      throw new Error("Pomelo rejected the lookup (HTTP " + upstream.status + "): " + detail);
+      throw new Error("Pomelo V2 rejected the lookup (HTTP " + upstream.status + "): " + detail + ". No availability result was recorded.");
     }
     const status = normalizePomeloStatus(payload);
     if (!status) throw new Error("Pomelo response did not contain a recognized availability status. No result was marked available.");

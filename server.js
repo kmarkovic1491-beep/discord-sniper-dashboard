@@ -271,7 +271,8 @@ app.post("/api/check-bulk", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          usernames,\n          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
+          usernames,
+          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
         }),
         signal: AbortSignal.timeout(60000)
       }
@@ -337,7 +338,8 @@ app.post("/api/check", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          usernames: [username],\n          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
+          usernames: [username],
+          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
         }),
         signal: AbortSignal.timeout(60000)
       }

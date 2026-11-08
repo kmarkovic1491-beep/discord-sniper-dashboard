@@ -276,6 +276,23 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 :root[data-og-theme="light"] .tutorial-note{background:#f0f2f5!important;color:#41454d!important;border-color:#d9dce2!important}
 :root[data-og-theme="dark"] .tutorial-note{background:#25272c!important;color:#d6d9df!important;border-color:#454750!important}
 
+
+/* NAV_GLYPHS_LARGER — make every custom navigation mark as prominent as Home */
+.nav .navglyph{
+ display:inline-flex!important;align-items:center;justify-content:center;
+ width:30px!important;height:26px;margin-right:7px!important;
+ font-size:23px!important;line-height:1!important;font-weight:850!important;
+ vertical-align:middle;color:var(--og-accent-2,var(--red2))!important;
+}
+.nav button{display:flex;align-items:center;min-height:46px}
+.navmobile .navglyph{
+ display:flex!important;align-items:center;justify-content:center;
+ width:100%;height:25px;margin:0 0 2px!important;
+ font-size:22px!important;line-height:1!important;font-weight:850!important;
+ color:var(--og-accent-2,var(--red2))!important;
+}
+.navmobile button{font-size:9px!important;gap:3px}
+
 </style>
 </head>
 <body>

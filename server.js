@@ -299,6 +299,11 @@ app.post("/api/check-bulk", async (req, res) => {
       return res.status(502).json({ error: "Apify returned invalid JSON." });
     }
     const items = Array.isArray(rows) ? rows : (Array.isArray(rows?.items) ? rows.items : [rows]);
+    const quotaMessage = items.find(item => item && typeof item === "object" && item.quota)?.quota;
+    if (quotaMessage) {
+      console.error("Apify quota blocked bulk check:", String(quotaMessage).slice(0, 300));
+      return res.status(402).json({ error: String(quotaMessage), code: "APIFY_QUOTA_EXHAUSTED" });
+    }
     const results = usernames.map((username, index) => {
       // The actor normally echoes each username. Some dataset rows omit that
       // field, so use the matching position only when row counts line up.
@@ -357,6 +362,10 @@ app.post("/api/check", async (req, res) => {
     const row = Array.isArray(rows)
       ? rows.find(x => String(x.username || x.input || "").toLowerCase() === username.toLowerCase()) || rows[0]
       : rows;
+    if (row && typeof row === "object" && row.quota) {
+      console.error("Apify quota blocked single check:", String(row.quota).slice(0, 300));
+      return res.status(402).json({ error: String(row.quota), code: "APIFY_QUOTA_EXHAUSTED" });
+    }
     if (!row || typeof row !== "object") {
       return res.status(502).json({ error: "Apify returned no result for this username." });
     }

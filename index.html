@@ -220,6 +220,19 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 .section.section-fade-in{animation:ogSectionFadeIn .72s cubic-bezier(.2,.75,.25,1) both!important;will-change:opacity,transform}
 @keyframes ogSectionFadeIn{from{opacity:0;transform:translateY(14px) scale(.995);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
 @media(prefers-reduced-motion:reduce){.section.section-fade-in{animation:none!important}}
+/* TUTORIAL_THEME_MATCH — follow the selected dashboard palette */
+:root[data-og-theme] .tutorial-backdrop{background:color-mix(in srgb,var(--og-accent) 13%,rgba(4,3,9,.84))}
+:root[data-og-theme] .tutorial-card{border-color:color-mix(in srgb,var(--og-accent) 48%,var(--line));background:linear-gradient(145deg,color-mix(in srgb,var(--og-accent) 20%,var(--panel2)),var(--panel));color:var(--text);box-shadow:0 28px 90px rgba(0,0,0,.48),0 0 34px color-mix(in srgb,var(--og-accent) 17%,transparent),inset 0 1px rgba(255,255,255,.16)}
+:root[data-og-theme] .tutorial-kicker{color:var(--og-accent-2)}
+:root[data-og-theme] .tutorial-card p{color:var(--muted)}
+:root[data-og-theme] .tutorial-progress span{background:linear-gradient(90deg,var(--og-accent),var(--og-accent-2))}
+:root[data-og-theme] .tutorial-note{border-color:color-mix(in srgb,var(--og-accent) 34%,var(--line));background:color-mix(in srgb,var(--og-accent) 9%,var(--panel));color:var(--text)}
+:root[data-og-theme] .tutorial-actions .btn:not(.secondary):not(.ghost){background:linear-gradient(135deg,var(--og-accent),var(--og-accent-2));border-color:var(--og-accent);color:#fff}
+:root[data-og-theme="light"] .tutorial-backdrop{background:rgba(35,40,65,.34)}
+:root[data-og-theme="light"] .tutorial-card{background:linear-gradient(145deg,#fff,#f0f2fb);border-color:color-mix(in srgb,var(--og-accent) 35%,#d8dbea);color:#24283a;box-shadow:0 24px 70px rgba(25,35,70,.2),0 0 30px color-mix(in srgb,var(--og-accent) 12%,transparent)}
+:root[data-og-theme="light"] .tutorial-card p{color:#596078}
+:root[data-og-theme="light"] .tutorial-note{background:#e9ecf8;color:#424a65;border-color:#d5daed}
+:root[data-og-theme="light"] .tutorial-progress{background:#dfe3f0}
 /* PURPLE_MOON_LOCK — keep the hero moon purple across every dashboard theme */
 </style>
 </head>

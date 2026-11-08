@@ -2,7 +2,7 @@
 const express = require("express");
 
 const app = express();
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "2mb" }));
 
 const allowedOrigin = "https://kmarkovic1491-beep.github.io";
 const verifiedNames = new Map();
@@ -152,6 +152,78 @@ app.get("/auth/me", (req, res) => {
   return res.json({ authenticated: true, user: { id: user.sub, username: user.username, global_name: user.global_name, avatar: user.avatar, is_owner: Boolean(user.is_owner) }, expiresAt: user.exp });
 });
 app.post("/auth/logout", (req, res) => res.json({ success: true }));
+
+/* SNIPERS_USER_CLOUD_STATE_V1 — each authenticated account gets its own saved dashboard. */
+let userStatePool = null;
+let userStateTableReady = null;
+async function getUserStatePool() {
+  if (!process.env.DATABASE_URL) return null;
+  if (!userStatePool) {
+    const { Pool } = require("pg");
+    userStatePool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 5,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    });
+    userStateTableReady = userStatePool.query(`
+      CREATE TABLE IF NOT EXISTS snipers_user_state (
+        discord_user_id TEXT PRIMARY KEY,
+        dashboard_state JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    userStatePool.on("error", error => console.error("User state database pool error:", error.message));
+  }
+  await userStateTableReady;
+  return userStatePool;
+}
+function requireSession(req, res) {
+  const auth = String(req.headers.authorization || "");
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const user = verifySession(token);
+  if (!user) {
+    res.status(401).json({ error: "Please sign in again." });
+    return null;
+  }
+  return user;
+}
+app.get("/api/state", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const user = requireSession(req, res);
+  if (!user) return;
+  try {
+    const pool = await getUserStatePool();
+    if (!pool) return res.status(503).json({ error: "Cloud saving is not configured yet." });
+    const result = await pool.query("SELECT dashboard_state, updated_at FROM snipers_user_state WHERE discord_user_id = $1", [String(user.sub)]);
+    return res.json({ state: result.rows[0]?.dashboard_state || null, updatedAt: result.rows[0]?.updated_at || null });
+  } catch (error) {
+    console.error("Cloud state load failed:", error.message);
+    return res.status(503).json({ error: "Could not load your saved dashboard right now." });
+  }
+});
+app.put("/api/state", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const user = requireSession(req, res);
+  if (!user) return;
+  const dashboardState = req.body?.state;
+  if (!dashboardState || typeof dashboardState !== "object" || Array.isArray(dashboardState)) {
+    return res.status(400).json({ error: "A dashboard state object is required." });
+  }
+  try {
+    const pool = await getUserStatePool();
+    if (!pool) return res.status(503).json({ error: "Cloud saving is not configured yet." });
+    await pool.query(
+      "INSERT INTO snipers_user_state (discord_user_id, dashboard_state, updated_at) VALUES ($1, $2::jsonb, NOW()) ON CONFLICT (discord_user_id) DO UPDATE SET dashboard_state = EXCLUDED.dashboard_state, updated_at = NOW()",
+      [String(user.sub), JSON.stringify(dashboardState)]
+    );
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Cloud state save failed:", error.message);
+    return res.status(503).json({ error: "Could not save your dashboard right now." });
+  }
+});
+
 
 // Test the configured webhook
 app.post("/test-webhook", async (req, res) => {

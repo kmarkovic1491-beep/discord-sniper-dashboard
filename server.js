@@ -309,7 +309,7 @@ app.post("/api/check-bulk", async (req, res) => {
     });
     const unresolved = results.filter(item => !item.status).map(item => item.username);
     if (unresolved.length) {
-      console.error("Apify bulk response missing clear status for", unresolved.length, "of", usernames.length, "usernames");
+      console.error("Apify bulk response missing clear status for", unresolved.length, "of", usernames.length, "usernames; output shape:", JSON.stringify({ isArray: Array.isArray(rows), topKeys: rows && !Array.isArray(rows) && typeof rows === "object" ? Object.keys(rows) : [], itemCount: items.length, firstItem: items[0] && typeof items[0] === "object" ? Object.fromEntries(Object.entries(items[0]).filter(([key]) => !/username|input|query/i.test(key)).slice(0, 20)) : items[0] }));
     }
     return res.json({ results, checked: results.filter(item => item.status).length, total: usernames.length });
   } catch (error) {
@@ -368,7 +368,7 @@ app.post("/api/check", async (req, res) => {
     else if (rawStatus.includes("invalid") || row.valid === false) status = "invalid";
 
     if (!status) {
-      console.error("Unrecognized Apify result shape");
+      console.error("Unrecognized Apify result shape:", JSON.stringify({ isArray: Array.isArray(rows), topKeys: rows && !Array.isArray(rows) && typeof rows === "object" ? Object.keys(rows) : [], rowKeys: Object.keys(row), sample: Object.fromEntries(Object.entries(row).filter(([key]) => !/username|input|query/i.test(key)).slice(0, 20)) }));
       return res.status(502).json({ error: "Apify returned an unrecognized result. Check the actor output schema." });
     }
     return res.json({ username, status });

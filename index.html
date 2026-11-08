@@ -319,7 +319,7 @@ $("savePrefs").addEventListener("click",()=>{const workerUrl=$("pomeloWorkerUrl"
 
 /* SNIPERS_FIRST_RUN_TUTORIAL_V1 */
 const tutorialSteps=[
- {section:"dashboard",title:"Welcome to Crimson Moon",body:"This is your overview. It shows how many names you track, their current status, and quick ways to add a username or open the idea generator.",note:"Tip: Your dashboard data is currently stored in this browser on this device."},
+ {section:"dashboard",title:"Welcome to Crimson Moon",body:"This is your overview. It shows how many names you track, their current status, and quick ways to add a username or open the idea generator.",note:"Your dashboard keeps you signed in between visits. Cloud workspace restore becomes available once the database connection is finished."},
  {section:"watchlist",title:"1 · Add usernames to Names",body:"Open Names. Add a username in the Add name field, or use Quick Add on the Overview. You can also copy a candidate and open Discord to check it manually.",note:"Names is your watchlist. A generated idea is only a suggestion until the checker confirms its status."},
  {section:"generator",title:"2 · Generate username ideas",body:"Open Idea generator. Choose a length and number of ideas, then tap Generate ideas. Use OG Name Creator or the bulk generator for more candidates. Generated names are saved to Names automatically when the generator says they were added.",note:"Generating a name does not check whether Discord has it available."},
  {section:"watchlist",title:"3 · Start the automatic sniper",body:"In Names, tap START AUTO SNIPER. It checks saved names in batches and keeps retrying temporary provider failures. Tap STOP whenever you want to pause it. Keep this dashboard tab open while it runs.",note:"Checks run through FeedMiner on Apify. Discord/provider rate limits can still slow retries; no checker can promise unlimited requests."},
@@ -406,6 +406,14 @@ async function initializeDiscordAuth(){
   if(!response.ok)throw Error("Session expired");
   const data=await response.json();if(!data.authenticated||!data.user)throw Error("Not authenticated");
   showDiscordUser(data.user);await syncCloudState(token);
+  const tutorialSeen=(()=>{try{return localStorage.getItem("snipers-og-discord-tutorial-seen-v1")==="1"}catch(e){return false}})();
+  if(tutorialSeen){
+   setDiscordLoginVisible(false);
+   $("discordLoginButton").disabled=false;
+   $("discordLoginButton").textContent="◉ Continue with Discord";
+   $("discordLoginStatus").textContent="You're signed in. Your saved workspace is ready.";
+   return;
+  }
   $("discordLoginBackdrop").hidden=false;
   $("discordLoginBackdrop").classList.remove("welcome-exit");
   $("discordLoginBackdrop").classList.add("welcome-loading");

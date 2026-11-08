@@ -387,6 +387,26 @@ app.post("/api/check", async (req, res) => {
   }
 });
 
+// Temporary one-shot Pomelo API probe; remove after validation.
+app.get("/_pomelo_probe", async (req, res) => {
+  try {
+    const upstream = await fetch("https://api.pomelo.lixqa.cc/v1/lookups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ username: "discord" }),
+      signal: AbortSignal.timeout(15000)
+    });
+    const body = await upstream.text();
+    return res.status(200).json({
+      upstreamStatus: upstream.status,
+      contentType: upstream.headers.get("content-type"),
+      body: body.slice(0, 2000)
+    });
+  } catch (error) {
+    return res.status(200).json({ probeError: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

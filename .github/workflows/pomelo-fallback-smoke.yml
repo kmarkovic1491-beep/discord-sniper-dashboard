@@ -1,0 +1,15 @@
+name: Pomelo fallback smoke test
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pomelo-fallback-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test live Pomelo checker
+        run: |
+          curl -sS --max-time 60 -w '\nHTTP_STATUS:%{http_code}\n' 'https://snipers-og-apify-checker.onrender.com/api/check?username=discord'

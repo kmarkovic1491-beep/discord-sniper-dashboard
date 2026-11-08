@@ -277,6 +277,18 @@ app.post("/api/check-bulk", async (req, res) => {
     const raw = await upstream.text();
     if (!upstream.ok) {
       console.error("Apify bulk request failed with HTTP", upstream.status);
+      if (upstream.status === 429) {
+        const retryHeader = upstream.headers.get("retry-after");
+        const retrySeconds = Number(retryHeader);
+        const retryAfterMs = Number.isFinite(retrySeconds) && retrySeconds > 0
+          ? Math.ceil(retrySeconds * 1000)
+          : 30000;
+        res.setHeader("Retry-After", String(Math.ceil(retryAfterMs / 1000)));
+        return res.status(429).json({
+          error: "Apify rate-limited the batch. The scanner is pausing before retrying.",
+          retryAfterMs
+        });
+      }
       return res.status(502).json({ error: "Apify bulk checker failed (HTTP " + upstream.status + ")." });
     }
     let rows;

@@ -237,6 +237,45 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 .nav .navglyph{display:inline-flex;align-items:center;justify-content:center;width:24px;margin-right:2px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:17px;font-weight:800;line-height:1;color:var(--og-accent-2,var(--red2));vertical-align:-1px}
 .navmobile .navglyph{display:block;width:auto;margin:0 0 3px;font-size:18px;font-weight:800;color:var(--og-accent-2,var(--red2));font-style:normal}
 /* THEME_MOON — hero artwork follows the selected theme palette */
+
+/* DISCORD_THEME_NEUTRAL_FIX — keep Discord Dark/Light genuinely neutral, not purple */
+:root[data-og-theme="dark"]{
+ --bg:#313338;--panel:#2b2d31;--panel2:#232428;--line:#3f4149;
+ --muted:#b5bac1;--text:#f2f3f5;--red:#5865f2;--red2:#7983f5;--green:#23a55a;
+ --og-orb-highlight:#d7dce5!important;--og-orb-mid:#687385!important;--og-orb-dark:#252932!important;--og-orb-border:#929cac!important;
+}
+:root[data-og-theme="light"]{
+ --bg:#f2f3f5;--panel:#ffffff;--panel2:#e3e5e8;--line:#d5d7dc;
+ --muted:#5c6068;--text:#232428;--red:#5865f2;--red2:#4752c4;--green:#248a50;
+ --og-orb-highlight:#ffffff!important;--og-orb-mid:#c5cedb!important;--og-orb-dark:#8794a8!important;--og-orb-border:#5865f2!important;
+}
+:root[data-og-theme="dark"] body{
+ background-image:radial-gradient(ellipse at 14% 8%,rgba(88,101,242,.10),transparent 38%),linear-gradient(145deg,#313338,#2b2d31 56%,#232428)!important;
+}
+:root[data-og-theme="light"] body{
+ background-image:linear-gradient(145deg,#f7f8fa,#eef0f3 56%,#e8eaed)!important;
+}
+:root[data-og-theme="dark"] .panel,:root[data-og-theme="dark"] .stat,:root[data-og-theme="dark"] .sidebar,:root[data-og-theme="dark"] .navmobile,
+:root[data-og-theme="dark"] .hero,:root[data-og-theme="dark"] .tutorial-card{
+ background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(35,36,40,.82))!important;
+ border-color:#454750!important;
+}
+:root[data-og-theme="light"] .panel,:root[data-og-theme="light"] .stat,:root[data-og-theme="light"] .sidebar,:root[data-og-theme="light"] .navmobile,
+:root[data-og-theme="light"] .hero,:root[data-og-theme="light"] .tutorial-card{
+ background:linear-gradient(145deg,#fff,#f4f5f7)!important;
+ border-color:#d9dce2!important;
+}
+:root[data-og-theme="dark"] .eyebrow,:root[data-og-theme="dark"] .tutorial-kicker{color:#aeb7ff!important}
+:root[data-og-theme="light"] .eyebrow,:root[data-og-theme="light"] .tutorial-kicker{color:#4752c4!important}
+:root[data-og-theme="dark"] .heroart{box-shadow:0 0 42px rgba(88,101,242,.16)!important}
+:root[data-og-theme="light"] .heroart{box-shadow:0 0 34px rgba(88,101,242,.12)!important}
+:root[data-og-theme="light"] .heroart:after{color:#5865f2!important;text-shadow:0 0 10px rgba(88,101,242,.25)!important}
+:root[data-og-theme="dark"] .heroart:after{color:#aeb7ff!important;text-shadow:0 0 12px rgba(88,101,242,.35)!important}
+:root[data-og-theme="dark"] .tutorial-card{background:linear-gradient(145deg,#36383e,#292b30)!important}
+:root[data-og-theme="light"] .tutorial-card{background:linear-gradient(145deg,#fff,#f1f3f6)!important}
+:root[data-og-theme="light"] .tutorial-note{background:#f0f2f5!important;color:#41454d!important;border-color:#d9dce2!important}
+:root[data-og-theme="dark"] .tutorial-note{background:#25272c!important;color:#d6d9df!important;border-color:#454750!important}
+
 </style>
 </head>
 <body>

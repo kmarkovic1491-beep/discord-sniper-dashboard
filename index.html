@@ -345,17 +345,23 @@ $("tutorialBackdrop").addEventListener("click",e=>{if(e.target===$("tutorialBack
 /* SNIPERS_DISCORD_LOGIN_GATE_V1 */
 const DISCORD_SESSION_KEY="snipers-og-discord-session-v1";
 let discordUser=null;
+let discordAuthControlsBound=false;
 function discordApiRoot(){return String(state.pomeloWorkerUrl||"https://snipers-og-apify-checker.onrender.com").trim().replace(/\/$/,"")}
 function setDiscordLoginVisible(visible){$("discordLoginBackdrop").hidden=!visible}
-function showDiscordUser(user){discordUser=user;$("discordAccountState").textContent="Signed in as "+(user.global_name||user.username)+" · Discord ID "+user.id;$("discordLoginStatus").textContent="Signed in as "+(user.global_name||user.username)+". Your quick-start tutorial is ready.";setDiscordLoginVisible(false)}
+function showDiscordUser(user){discordUser=user;const display=String(user.global_name||user.username||"Discord user");const handle=String(user.username||"");const avatar=user.avatar&&user.id!=="snipers-og-owner"?"https://cdn.discordapp.com/avatars/"+encodeURIComponent(user.id)+"/"+encodeURIComponent(user.avatar)+".png?size=96":"https://cdn.discordapp.com/embed/avatars/0.png";$("discordAccountState").innerHTML='<div style="display:flex;align-items:center;gap:12px"><img src="'+avatar+'" alt="" width="48" height="48" style="width:48px;height:48px;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer"><div><strong style="display:block;color:var(--text)">'+esc(display)+'</strong><span>'+(user.is_owner? "SNIPERS OG owner access":"@"+esc(handle))+(user.is_owner?"":" · Discord account")+(user.is_owner?"":" · ID "+esc(user.id))+'</span></div></div>';$("discordLoginStatus").textContent="Signed in as "+display+". Your quick-start tutorial is ready.";setDiscordLoginVisible(false)}
 async function initializeDiscordAuth(){
  const params=new URLSearchParams(location.hash.replace(/^#/,""));
  const returnedSession=params.get("discord_session");
  if(returnedSession){try{localStorage.setItem(DISCORD_SESSION_KEY,returnedSession)}catch(e){}history.replaceState(null,"",location.pathname+location.search)}
  const token=(()=>{try{return localStorage.getItem(DISCORD_SESSION_KEY)||""}catch(e){return""}})();
- $("ownerBypassButton").addEventListener("click",()=>{const panel=$("ownerBypassPanel");panel.hidden=!panel.hidden;if(!panel.hidden)$("ownerBypassPassword").focus()});
- $("ownerBypassSubmit").addEventListener("click",submitOwnerBypass);
- $("ownerBypassPassword").addEventListener("keydown",e=>{if(e.key==="Enter")submitOwnerBypass()});
+ if(!discordAuthControlsBound){
+  $("ownerBypassButton").addEventListener("click",()=>{const panel=$("ownerBypassPanel");panel.hidden=!panel.hidden;if(!panel.hidden)$("ownerBypassPassword").focus()});
+  $("ownerBypassSubmit").addEventListener("click",submitOwnerBypass);
+  $("ownerBypassPassword").addEventListener("keydown",e=>{if(e.key==="Enter")submitOwnerBypass()});
+  $("discordLoginButton").addEventListener("click",()=>{location.href=discordApiRoot()+"/auth/discord"});
+  $("discordLogout").addEventListener("click",()=>{try{localStorage.removeItem(DISCORD_SESSION_KEY)}catch(e){}discordUser=null;$("discordAccountState").textContent="Signed out. Sign in again to continue.";$("discordLoginStatus").textContent="Sign in with Discord to open SNIPERS OG.";$("discordLoginButton").disabled=false;setDiscordLoginVisible(true);$("tutorialBackdrop").classList.remove("open")});
+  discordAuthControlsBound=true;
+ }
  async function submitOwnerBypass(){
   const password=$("ownerBypassPassword").value;
   const status=$("ownerBypassStatus");
@@ -371,9 +377,8 @@ async function initializeDiscordAuth(){
   }catch(error){status.textContent=error.message||"Could not verify owner access."}
   finally{$("ownerBypassSubmit").disabled=false}
  }
- $("discordLoginButton").addEventListener("click",()=>{location.href=discordApiRoot()+"/auth/discord"});
- $("discordLogout").addEventListener("click",()=>{try{localStorage.removeItem(DISCORD_SESSION_KEY)}catch(e){}discordUser=null;$("discordAccountState").textContent="Signed out. Sign in again to continue.";$("discordLoginStatus").textContent="Sign in with Discord to open SNIPERS OG.";$("discordLoginButton").disabled=false;setDiscordLoginVisible(true);$("tutorialBackdrop").classList.remove("open")});
- if(!token){setDiscordLoginVisible(true);$("discordAccountState").textContent="Not signed in.";try{const c=await fetch(discordApiRoot()+"/auth/config");const cfg=await c.json();if(!cfg.configured){$("discordLoginStatus").textContent="Discord OAuth is not set up yet. Owner access can still work independently.";$("discordLoginButton").disabled=true;}if(!cfg.ownerBypassConfigured){$("ownerBypassStatus").textContent="Owner bypass is not configured on the server yet.";$("ownerBypassSubmit").disabled=true;}}catch(e){$("discordLoginStatus").textContent="Could not reach the sign-in server. Check the Render backend URL in Settings.";$("discordLoginButton").disabled=true}return}
+
+ if(!token){setDiscordLoginVisible(true);$("discordAccountState").textContent="Not signed in.";try{const c=await fetch(discordApiRoot()+"/auth/config");const cfg=await c.json();if(!cfg.configured){$("discordLoginStatus").textContent="Discord OAuth is not set up yet. Owner access can still work independently.";$("discordLoginButton").disabled=true;}if(!cfg.ownerBypassConfigured){$("ownerBypassStatus").textContent="Owner sign-in is temporarily unavailable. You can still try again shortly.";}}catch(e){$("discordLoginStatus").textContent="Could not reach the sign-in server. Check the Render backend URL in Settings.";$("discordLoginButton").disabled=true}return}
  try{
   const response=await fetch(discordApiRoot()+"/auth/me",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
   if(!response.ok)throw Error("Session expired");

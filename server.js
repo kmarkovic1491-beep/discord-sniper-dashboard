@@ -250,140 +250,130 @@ function normalizeApifyStatus(row) {
   return null;
 }
 
-// Batch availability check: one Apify actor run for up to 50 usernames.
+async function checkDiscordUsername(username) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ username }),
+    signal: AbortSignal.timeout(12000)
+  });
+
+  if (response.status === 429) {
+    let body = {};
+    try { body = await response.json(); } catch {}
+    const retryHeader = response.headers.get("retry-after");
+    const headerNumber = Number(retryHeader);
+    const headerDateMs = retryHeader && !Number.isFinite(headerNumber)
+      ? Date.parse(retryHeader) - Date.now() : 0;
+    const bodySeconds = Number(body.retry_after);
+    const retryAfterMs = Math.max(2000, Math.ceil(
+      Number.isFinite(headerNumber) && headerNumber > 0 ? headerNumber * 1000 :
+      (headerDateMs > 0 ? headerDateMs :
+      (Number.isFinite(bodySeconds) && bodySeconds > 0 ? bodySeconds * 1000 : 60000))
+    ));
+    discordCooldownUntil = Math.max(discordCooldownUntil, Date.now() + retryAfterMs);
+    return { rateLimited: true, retryAfterMs: discordCooldownUntil - Date.now() };
+  }
+
+  if (!response.ok) {
+    throw new Error("Discord returned HTTP " + response.status);
+  }
+
+  const data = await response.json();
+  if (typeof data.taken !== "boolean") {
+    throw new Error("Discord returned no clear availability result");
+  }
+  return { status: data.taken ? "TAKEN" : "AVAILABLE" };
+}
+
+// Direct Discord checker. Small sequential batches avoid concurrent bursts.
 app.post("/api/check-bulk", async (req, res) => {
   const input = req.body?.usernames;
-  if (!Array.isArray(input) || input.length < 1 || input.length > 50 ||
+  if (!Array.isArray(input) || input.length < 1 || input.length > 10 ||
       input.some(name => typeof name !== "string" || !/^[a-z0-9._]{2,32}$/i.test(name.trim()))) {
-    return res.status(400).json({ error: "Send between 1 and 50 valid usernames." });
+    return res.status(400).json({ error: "Send between 1 and 10 valid usernames per batch." });
   }
-  if (!process.env.APIFY_TOKEN) {
-    return res.status(503).json({ error: "APIFY_TOKEN is not configured on the Render service." });
+
+  const now = Date.now();
+  if (now < discordCooldownUntil) {
+    const retryAfterMs = discordCooldownUntil - now;
+    res.setHeader("Retry-After", String(Math.ceil(retryAfterMs / 1000)));
+    return res.status(429).json({
+      error: "Discord has rate-limited checks. The scanner is paused and will retry.",
+      retryAfterMs
+    });
   }
-  const usernames = [...new Set(input.map(name => name.trim()))];
+
+  const usernames = [...new Set(input.map(name => name.trim().toLowerCase()))];
+  const results = [];
   try {
-    const upstream = await fetch(
-      "https://api.apify.com/v2/acts/maged120~discord-username-checker/run-sync-get-dataset-items?format=json&clean=true",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + process.env.APIFY_TOKEN,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          usernames,
-          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
-        }),
-        signal: AbortSignal.timeout(60000)
-      }
-    );
-    const raw = await upstream.text();
-    if (!upstream.ok) {
-      console.error("Apify bulk request failed with HTTP", upstream.status);
-      if (upstream.status === 429) {
-        const retryHeader = upstream.headers.get("retry-after");
-        const retrySeconds = Number(retryHeader);
-        const retryAfterMs = Number.isFinite(retrySeconds) && retrySeconds > 0
-          ? Math.ceil(retrySeconds * 1000)
-          : 30000;
+    for (let i = 0; i < usernames.length; i++) {
+      if (Date.now() < discordCooldownUntil) {
+        const retryAfterMs = discordCooldownUntil - Date.now();
         res.setHeader("Retry-After", String(Math.ceil(retryAfterMs / 1000)));
         return res.status(429).json({
-          error: "Apify rate-limited the batch. The scanner is pausing before retrying.",
+          error: "Discord has rate-limited checks. The scanner is paused and will retry this batch.",
           retryAfterMs
         });
       }
-      return res.status(502).json({ error: "Apify bulk checker failed (HTTP " + upstream.status + ")." });
+
+      const checked = await checkDiscordUsername(usernames[i]);
+      if (checked.rateLimited) {
+        res.setHeader("Retry-After", String(Math.ceil(checked.retryAfterMs / 1000)));
+        return res.status(429).json({
+          error: "Discord rate-limited the checker. This batch will be retried after the cooldown.",
+          retryAfterMs: checked.retryAfterMs
+        });
+      }
+      results.push({ username: usernames[i], status: checked.status });
+
+      if (i < usernames.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
     }
-    let rows;
-    try { rows = JSON.parse(raw); } catch {
-      return res.status(502).json({ error: "Apify returned invalid JSON." });
-    }
-    const items = Array.isArray(rows) ? rows : (Array.isArray(rows?.items) ? rows.items : [rows]);
-    const quotaMessage = items.find(item => item && typeof item === "object" && item.quota)?.quota;
-    if (quotaMessage) {
-      console.error("Apify quota blocked bulk check:", String(quotaMessage).slice(0, 300));
-      return res.status(402).json({ error: String(quotaMessage), code: "APIFY_QUOTA_EXHAUSTED" });
-    }
-    const results = usernames.map((username, index) => {
-      // The actor normally echoes each username. Some dataset rows omit that
-      // field, so use the matching position only when row counts line up.
-      const row = items.find(item =>
-        String(item?.username || item?.input || item?.query || "").trim().toLowerCase() === username.toLowerCase()
-      ) || (items.length === usernames.length ? items[index] : null);
-      return { username, status: row && typeof row === "object" ? normalizeApifyStatus(row) : null };
-    });
-    const unresolved = results.filter(item => !item.status).map(item => item.username);
-    if (unresolved.length) {
-      console.error("Apify bulk response missing clear status for", unresolved.length, "of", usernames.length, "usernames; output shape:", JSON.stringify({ isArray: Array.isArray(rows), topKeys: rows && !Array.isArray(rows) && typeof rows === "object" ? Object.keys(rows) : [], itemCount: items.length, firstItem: items[0] && typeof items[0] === "object" ? Object.fromEntries(Object.entries(items[0]).filter(([key]) => !/username|input|query/i.test(key)).slice(0, 20)) : items[0] }));
-    }
-    return res.json({ results, checked: results.filter(item => item.status).length, total: usernames.length });
+    return res.json({ results, checked: results.length, total: usernames.length, source: "discord" });
   } catch (error) {
-    console.error("Apify bulk check failed:", error.message);
-    return res.status(502).json({ error: "Could not complete the Apify bulk check." });
+    console.error("Direct Discord bulk check failed:", error.message);
+    return res.status(502).json({ error: "Discord check failed: " + error.message });
   }
 });
 
-// Apify-backed username availability check
+// Single username check using Discord directly (no Apify token or actor).
 app.post("/api/check", async (req, res) => {
-  const username = String(req.body?.username || "").trim();
-  if (!/^[a-z0-9._]{2,32}$/i.test(username)) {
+  const username = String(req.body?.username || "").trim().toLowerCase();
+  if (!/^[a-z0-9._]{2,32}$/.test(username)) {
     return res.status(400).json({ error: "Enter a valid Discord username." });
   }
-  if (!process.env.APIFY_TOKEN) {
-    return res.status(503).json({ error: "APIFY_TOKEN is not configured on the Render service." });
+  const now = Date.now();
+  if (now < discordCooldownUntil) {
+    const retryAfterMs = discordCooldownUntil - now;
+    res.setHeader("Retry-After", String(Math.ceil(retryAfterMs / 1000)));
+    return res.status(429).json({
+      error: "Discord has rate-limited checks. Please wait before retrying.",
+      retryAfterMs
+    });
   }
 
   try {
-    const upstream = await fetch(
-      "https://api.apify.com/v2/acts/maged120~discord-username-checker/run-sync-get-dataset-items?format=json&clean=true",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + process.env.APIFY_TOKEN,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          usernames: [username],
-          proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
-        }),
-        signal: AbortSignal.timeout(60000)
-      }
-    );
-    const raw = await upstream.text();
-    if (!upstream.ok) {
-      console.error("Apify request failed with HTTP", upstream.status);
-      return res.status(502).json({ error: "Apify checker request failed (HTTP " + upstream.status + ")." });
+    const checked = await checkDiscordUsername(username);
+    if (checked.rateLimited) {
+      res.setHeader("Retry-After", String(Math.ceil(checked.retryAfterMs / 1000)));
+      return res.status(429).json({
+        error: "Discord rate-limited the checker. Please wait before retrying.",
+        retryAfterMs: checked.retryAfterMs
+      });
     }
-
-    let rows;
-    try { rows = JSON.parse(raw); } catch {
-      return res.status(502).json({ error: "Apify returned invalid JSON." });
+    if (checked.status === "AVAILABLE") {
+      verifiedNames.set(username, Date.now() + 60000);
     }
-    const row = Array.isArray(rows)
-      ? rows.find(x => String(x.username || x.input || "").toLowerCase() === username.toLowerCase()) || rows[0]
-      : rows;
-    if (row && typeof row === "object" && row.quota) {
-      console.error("Apify quota blocked single check:", String(row.quota).slice(0, 300));
-      return res.status(402).json({ error: String(row.quota), code: "APIFY_QUOTA_EXHAUSTED" });
-    }
-    if (!row || typeof row !== "object") {
-      return res.status(502).json({ error: "Apify returned no result for this username." });
-    }
-
-    const rawStatus = String(row.status || row.availability || row.result || "").toLowerCase();
-    let status = null;
-    if (rawStatus.includes("available") || row.available === true || row.isAvailable === true) status = "available";
-    else if (rawStatus.includes("taken") || row.taken === true || row.available === false || row.isAvailable === false) status = "taken";
-    else if (rawStatus.includes("invalid") || row.valid === false) status = "invalid";
-
-    if (!status) {
-      console.error("Unrecognized Apify result shape:", JSON.stringify({ isArray: Array.isArray(rows), topKeys: rows && !Array.isArray(rows) && typeof rows === "object" ? Object.keys(rows) : [], rowKeys: Object.keys(row), sample: Object.fromEntries(Object.entries(row).filter(([key]) => !/username|input|query/i.test(key)).slice(0, 20)) }));
-      return res.status(502).json({ error: "Apify returned an unrecognized result. Check the actor output schema." });
-    }
-    return res.json({ username, status });
+    return res.json({ username, status: checked.status, source: "discord" });
   } catch (error) {
-    console.error("Apify check failed:", error.message);
-    return res.status(502).json({ error: "Could not complete the Apify username check." });
+    console.error("Direct Discord check failed:", error.message);
+    return res.status(502).json({ error: "Discord check failed: " + error.message });
   }
 });
 

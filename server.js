@@ -144,7 +144,7 @@ app.post("/notify", async (req, res) => {
 
 
 // FeedMiner (Apify) provider. It uses the actor the owner tested manually.
-// Keep requests serialized and at least 5 seconds apart; provider/upstream limits
+// Keep requests serialized and at least 3 seconds apart; provider/upstream limits
 // may still apply. Never convert unchecked or ambiguous rows into availability.
 const FEEDMINER_ACTOR_ID = "bQ1gNUV9OXLXAP4aj";
 let feedMinerQueue = Promise.resolve();
@@ -156,7 +156,7 @@ async function runFeedMinerBatch(usernames) {
     throw Object.assign(new Error("FeedMiner is not configured yet. Add APIFY_API_TOKEN to the Render service environment."), { statusCode: 503 });
   }
   const task = feedMinerQueue.then(async () => {
-    const waitMs = Math.max(0, 10000 - (Date.now() - lastFeedMinerStart));
+    const waitMs = Math.max(0, 3000 - (Date.now() - lastFeedMinerStart));
     if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
     lastFeedMinerStart = Date.now();
     const response = await fetch("https://api.apify.com/v2/acts/" + FEEDMINER_ACTOR_ID + "/run-sync-get-dataset-items", {

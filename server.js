@@ -333,10 +333,25 @@ app.post("/notify", async (req, res) => {
 // It uses no Apify/Pomelo account, proxies, user token, or CAPTCHA bypass.
 // Discord may change this undocumented endpoint or rate-limit the Render server.
 const DISCORD_USERNAME_CHECK_URL = "https://discord.com/api/v9/unique-username/username-attempt-unauthed";
-const DISCORD_CHECK_MIN_INTERVAL_MS = 1500;
+const DISCORD_CHECK_MIN_INTERVAL_MS = 2000;
+const DISCORD_MAX_AUTOWAIT_MS = 30000;
 const discordCheckCache = new Map();
 let discordCheckQueue = Promise.resolve();
 let lastDiscordCheckAt = 0;
+let discordRateLimitUntil = 0;
+
+function discordRetryAfterSeconds(response, payload) {
+  const candidates = [
+    response.headers.get("retry-after"),
+    response.headers.get("x-ratelimit-reset-after"),
+    payload?.retry_after
+  ];
+  for (const value of candidates) {
+    const seconds = Number(value);
+    if (Number.isFinite(seconds) && seconds > 0) return Math.min(seconds, 3600);
+  }
+  return 10;
+}
 
 function normalizeUsernameInput(value) {
   return String(value || "").trim().replace(/^@/, "").toLowerCase();
@@ -353,7 +368,17 @@ function queueDiscordCheck(username) {
     if (cached && Date.now() - cached.checkedAtMs < 15000) {
       return { ...cached.result, cached: true };
     }
-    const waitMs = Math.max(0, DISCORD_CHECK_MIN_INTERVAL_MS - (Date.now() - lastDiscordCheckAt));
+    const now = Date.now();
+    const cooldownMs = Math.max(0, discordRateLimitUntil - now);
+    if (cooldownMs > DISCORD_MAX_AUTOWAIT_MS) {
+      return {
+        username, status: "UNCONFIRMED", checked: false,
+        error: "Discord has temporarily paused availability checks. Try again after the cooldown.",
+        retryAfterSeconds: Math.ceil(cooldownMs / 1000), source: "snipers-og"
+      };
+    }
+    const intervalMs = Math.max(0, DISCORD_CHECK_MIN_INTERVAL_MS - (now - lastDiscordCheckAt));
+    const waitMs = Math.max(cooldownMs, intervalMs);
     if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
     lastDiscordCheckAt = Date.now();
 
@@ -374,11 +399,12 @@ function queueDiscordCheck(username) {
     const checkedAt = new Date().toISOString();
 
     if (response.status === 429) {
-      const retryAfter = Number(response.headers.get("retry-after"));
+      const retryAfter = discordRetryAfterSeconds(response, payload);
+      discordRateLimitUntil = Math.max(discordRateLimitUntil, Date.now() + retryAfter * 1000);
       return {
-        username, status: "UNCONFIRMED", checked: false, error: "Discord rate-limited this check. Please wait before trying again.",
-        retryAfterSeconds: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
-        checkedAt, source: "snipers-og"
+        username, status: "UNCONFIRMED", checked: false,
+        error: "Discord rate-limited this check. The shared checker is cooling down; no availability was guessed.",
+        retryAfterSeconds: retryAfter, checkedAt, source: "snipers-og"
       };
     }
     if (response.status === 400 || response.status === 422) {

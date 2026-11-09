@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09090d"><title>SNIPERS OG — Nitro</title>
+<link rel="stylesheet" href="./dashboard-theme.css?v=a36621a">
+<style>
+/* Nitro page layout, using the exact shared dashboard design tokens and components. */
+body{min-height:100vh;margin:0;padding:24px 16px calc(32px + env(safe-area-inset-bottom));font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);background-attachment:fixed}
+.nitro-wrap{width:min(900px,100%);margin:0 auto}
+.nitro-top{display:flex;align-items:center;gap:12px;margin:4px 0 34px}
+.nitro-top .brandmark{flex:none}
+.nitro-back{margin-left:auto;text-decoration:none;color:var(--text);padding:9px 13px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--panel) 75%,transparent)}
+.nitro-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:12px 0 25px}
+.nitro-hero h1{font-size:clamp(28px,5vw,42px);line-height:1.1;letter-spacing:-1.2px;margin:0 0 10px}
+.nitro-hero p{margin:0;color:var(--muted);max-width:650px}
+.nitro-panel{padding:20px;margin-bottom:15px}
+.nitro-panel .paneltitle{font-size:11px;letter-spacing:1.4px;font-weight:850;margin-bottom:12px}
+.nitro-panel .muted{color:var(--muted);font-size:12px}
+.nitro-panel .fieldlabel{display:block;font-size:11px;color:var(--muted);margin:13px 0 6px}
+.nitro-panel input{width:100%;min-height:48px;padding:11px 12px}
+.nitro-actions{display:flex;gap:9px;margin-top:12px}
+.nitro-actions>*{flex:1}
+.nitro-status{min-height:24px;margin-top:10px;color:var(--muted);font-size:12px}
+.nitro-panel .notice{margin:10px 0}
+.nitro-links{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+ .nitro-tutorial summary{cursor:pointer;font-weight:850;letter-spacing:.8px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px}.nitro-tutorial summary::-webkit-details-marker{display:none}.nitro-tutorial summary:after{content:"＋";color:var(--og-accent-2);font-size:18px}.nitro-tutorial[open] summary:after{content:"−"}.nitro-tutorial ol{padding-left:22px;margin:15px 0 4px}.nitro-tutorial li{padding:0 0 12px 5px;color:var(--text)}.nitro-tutorial li::marker{color:var(--og-accent-2);font-weight:900}.nitro-tutorial li span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.nitro-tutorial .notice{margin-top:12px}
+@media(max-width:850px){body{padding:16px 14px calc(30px + env(safe-area-inset-bottom))}.nitro-top{margin-bottom:28px}.nitro-hero{margin-top:5px}.nitro-hero .heroart{width:76px;height:76px}.nitro-panel{padding:17px}.nitro-actions{flex-direction:column}.nitro-actions .btn.secondary{flex:auto}}
+</style></head>
+<body><main class="nitro-wrap">
+<header class="nitro-top"><div class="brandmark">☾</div><div><div class="brandname">SNIPERS <span>OG</span></div><div class="brandtag" id="themeBrand">CRIMSON MOON</div></div><a class="nitro-back" href="./">← Dashboard</a></header>
+<div class="nitro-hero"><div><div class="eyebrow">NITRO TOOLS</div><h1>NITRO SNIPER</h1><p>Keep Nitro gift links organized and open them through Discord for manual redemption.</p></div><div class="heroart"></div></div>
+<section class="panel nitro-panel nitro-tutorial" id="nitro-tutorial">
+<details open>
+<summary>📘 NITRO PAGE TUTORIAL · HOW TO USE EVERYTHING</summary>
+<p class="muted" style="margin-top:12px">A quick walkthrough of the tools on this page. Tap the heading to collapse or reopen this guide.</p>
+<ol>
+<li><b>Check a Nitro gift link</b><span>Paste a Discord gift code or official gift URL into NITRO GIFT CODE CHECKER, then tap CHECK ON DISCORD. This validates the link format and opens Discord; only Discord can confirm whether the gift is genuine, unused, and redeemable.</span></li>
+<li><b>Choose the gift type</b><span>In NITRO GIFT TYPE, select Nitro (full) or Nitro Basic to label the gift you are organizing. This selection is manual and does not identify the product from a code.</span></li>
+<li><b>Generate username ideas</b><span>Under NITRO USERNAME SNIPER CONTROLS, choose username length and names per batch, then tap GENERATE NAMES. New ideas are saved to the same Names list used by the main dashboard.</span></li>
+<li><b>Turn on auto-generate</b><span>Tap AUTO-GENERATE to keep creating and saving username ideas. Tap it again or use STOP AUTOMATION to stop.</span></li>
+<li><b>Generate and check names</b><span>Tap AUTO-GEN + CHECK to generate candidates and send them to the experimental username availability checker. CHECK SAVED NAMES scans names already in your watchlist.</span></li>
+<li><b>Set up webhook alerts</b><span>Paste a Discord channel webhook URL under DISCORD WEBHOOK ALERTS, tap SAVE WEBHOOK, then SEND TEST ALERT. Alerts are sent for newly confirmed AVAILABLE username results. Keep the URL private.</span></li>
+<li><b>Stop automatic tasks</b><span>Tap STOP AUTOMATION whenever you want to stop auto-generation and automatic checking. Keep this page open while an automatic mode is running.</span></li>
+</ol>
+<div class="notice">Important: username availability checking is experimental and unofficial, and may be rate-limited. It checks Discord usernames — it does not check Nitro gift-code validity. No tool here auto-claims gifts or needs your Discord password or user token.</div>
+</details>
+</section>
+<section class="panel nitro-panel"><div class="paneltitle">NITRO GIFT CODE CHECKER</div><p class="muted">Paste a Discord gift code or gift link. This checks its format and opens the official Discord redemption page. Only Discord can confirm whether the gift is real, unused, and redeemable.</p>
+<label class="fieldlabel" for="gift">Gift code or link</label><input id="gift" type="text" inputmode="url" autocomplete="off" placeholder="Paste code or https://discord.gift/…">
+<div class="nitro-actions"><button class="btn" id="check" type="button">CHECK ON DISCORD</button><button class="btn secondary" id="clear" type="button">CLEAR</button></div><div class="nitro-status" id="status" aria-live="polite">No gift code entered. Format checks do not verify redemption.</div>
+<label class="fieldlabel" for="nitroDemoLink">Random Nitro-style demo link (fake sample)</label>
+<div class="nitro-actions"><input id="nitroDemoLink" type="text" readonly placeholder="A random demo link will appear here"><button class="btn secondary" id="nitroDemoGenerate" type="button">GENERATE DEMO LINK</button></div>
+<div class="nitro-actions"><button class="btn secondary" id="nitroDemoCopy" type="button">COPY DEMO LINK</button></div>
+<div class="nitro-status" id="nitroDemoStatus" aria-live="polite">Demo only — generated links are fake and cannot redeem Nitro.</div></section>
+<section class="panel nitro-panel" id="nitro-username-tools">
+<div class="paneltitle">⚡ NITRO USERNAME SNIPER CONTROLS</div>
+<p class="muted">These controls run the existing dashboard generator and checker using the same saved Names list. Keep this Nitro page open while automatic modes run.</p>
+<label class="fieldlabel" for="nitroNameLength">Username length</label><select id="nitroNameLength"><option value="3">3 characters</option><option value="4" selected>4 characters</option><option value="5">5 characters</option></select>
+<label class="fieldlabel" for="nitroNameCount">Names per batch</label><select id="nitroNameCount"><option value="6">6</option><option value="12" selected>12</option><option value="18">18</option><option value="24">24</option></select>
+<div class="nitro-actions"><button class="btn" id="nitroGenerate" type="button">✳ GENERATE NAMES</button><button class="btn secondary" id="nitroAutoGenerate" type="button">▶ AUTO-GENERATE</button></div>
+<div class="nitro-actions"><button class="btn" id="nitroAutoPilot" type="button">⚡ AUTO-GEN + CHECK</button><button class="btn secondary" id="nitroAutoScan" type="button">🔍 CHECK SAVED NAMES</button></div>
+<div class="nitro-actions"><button class="btn secondary" id="nitroStop" type="button">■ STOP AUTOMATION</button></div>
+<div class="nitro-status" id="nitroToolsStatus" aria-live="polite">Ready. Generate names or start an automatic mode.</div>
+<div class="notice">Availability checks use the experimental, unofficial checker. Discord may rate-limit it; only results explicitly confirmed by the service are marked AVAILABLE or TAKEN. Confirm in Discord before acting.</div>
+</section>
+<section class="panel nitro-panel" id="nitro-bulk-tools">
+<div class="paneltitle">🧬 NITRO BULK LINK TOOLS</div>
+<p class="muted">Paste gift links you already have to check their URL format and remove duplicates, or generate batches of clearly fake demo links for testing. Random demo links are not Discord gifts and cannot redeem Nitro.</p>
+<label class="fieldlabel" for="nitroBulkLinks">Paste existing Nitro gift links (one per line)</label>
+<textarea id="nitroBulkLinks" rows="5" placeholder="https://discord.gift/…&#10;https://discord.com/gifts/…"></textarea>
+<div class="nitro-actions"><button class="btn" id="nitroBulkCheck" type="button">CHECK LINK FORMATS</button><button class="btn secondary" id="nitroBulkClear" type="button">CLEAR</button></div>
+<div class="nitro-status" id="nitroBulkCheckStatus" aria-live="polite">Format-only check. It cannot verify whether a gift exists, is unused, or can be redeemed.</div>
+<label class="fieldlabel" for="nitroBulkDemoCount">Number of fake demo links</label>
+<select id="nitroBulkDemoCount"><option value="10">10 links</option><option value="25">25 links</option><option value="50">50 links</option><option value="100">100 links</option></select>
+<div class="nitro-actions"><button class="btn" id="nitroBulkDemoGenerate" type="button">GENERATE DEMO BATCH</button><button class="btn secondary" id="nitroBulkDemoDownload" type="button">DOWNLOAD DEMO LIST</button></div>
+<label class="fieldlabel" for="nitroBulkDemoOutput">Fake demo links</label><textarea id="nitroBulkDemoOutput" rows="5" readonly placeholder="Your fake demo links will appear here…"></textarea>
+<div class="nitro-status" id="nitroBulkDemoStatus" aria-live="polite">Demo links use example.invalid and cannot redeem Nitro.</div>
+</section>
+<section class="panel nitro-panel" id="nitro-webhook-tools">
+<div class="paneltitle">🔔 DISCORD WEBHOOK ALERTS</div>
+<p class="muted">Get an alert when the checker newly confirms a username as AVAILABLE. This uses the same webhook setting as the main dashboard.</p>
+<label class="fieldlabel" for="nitroWebhook">Discord webhook URL</label><input id="nitroWebhook" type="url" autocomplete="off" placeholder="https://discord.com/api/webhooks/…">
+<div class="nitro-actions"><button class="btn" id="nitroWebhookSave" type="button">SAVE WEBHOOK</button><button class="btn secondary" id="nitroWebhookTest" type="button">SEND TEST ALERT</button></div>
+<div class="nitro-status" id="nitroWebhookStatus" aria-live="polite">Webhook is stored locally in this browser.</div>
+</section>
+<section class="panel nitro-panel" id="nitro-gift-type">
+<div class="paneltitle">💎 NITRO GIFT TYPE</div>
+<p class="muted">Choose the type you are organizing before checking a gift link. This is a manual label only; it does not detect or verify Nitro product type.</p>
+<label class="fieldlabel" for="nitroGiftType">Gift type</label><select id="nitroGiftType"><option value="nitro">Nitro (full)</option><option value="basic">Nitro Basic</option></select>
+<div class="nitro-status">Gift redemption and subscription details must still be confirmed on Discord.</div>
+</section>
+<section class="panel nitro-panel"><div class="paneltitle">SAFETY & COMPATIBILITY</div><div class="notice">Manual helper only. It does not auto-claim Nitro, join giveaways, automate Discord accounts, or request Discord user tokens. Never paste a Discord password or user token into a sniper.</div><p class="muted">The linked NitroSniperGo project describes itself as a self-bot, uses account tokens, and warns that it violates Discord's Terms and may get accounts banned. That automation is not included here.</p><div class="nitro-links"><a class="checklink" href="https://discord.com/app" target="_blank" rel="noopener noreferrer">OPEN DISCORD ↗</a><a class="checklink" href="https://github.com/Vedza/NitroSniperGo" target="_blank" rel="noopener noreferrer">VIEW ORIGINAL PROJECT ↗</a></div></section>
+</main>
+<script>
+(function(){
+ const labels={crimson:"CRIMSON MOON",dark:"DISCORD DARK",light:"DISCORD LIGHT",ash:"DISCORD ASH",onyx:"DISCORD ONYX",midnight:"MIDNIGHT BLUE",blurple:"BLURPLE",emerald:"EMERALD",rose:"ROSE QUARTZ"};
+ const accents={crimson:["#e11d48","#fb4567"],dark:["#5865f2","#8b96ff"],light:["#5865f2","#7985ff"],ash:["#8995a8","#c2cad7"],onyx:["#a1a1aa","#e4e4e7"],midnight:["#3b82f6","#93c5fd"],blurple:["#5865f2","#a5adff"],emerald:["#10b981","#6ee7b7"],rose:["#db2777","#f9a8d4"]};
+ const symbols={crimson:"☾",dark:"◈",light:"☼",ash:"◐",onyx:"●",midnight:"✦",blurple:"◉",emerald:"❖",rose:"♡"};
+ const orbs={crimson:["#ff9bb0","#a51d49","#260b1a","#fb4567"],dark:["#b4bbff","#454fc4","#11132f","#8b96ff"],light:["#dce1ff","#7886e8","#303b83","#5865f2"],ash:["#e0e5ee","#687487","#171c26","#aeb9c9"],onyx:["#f4f4f5","#777780","#171719","#c7c7ce"],midnight:["#a8d5ff","#2866b7","#071a36","#60a5fa"],blurple:["#c4caff","#5865d9","#171744","#a5adff"],emerald:["#a7f3d0","#16845e","#06291f","#6ee7b7"],rose:["#fbcfe8","#be347d","#3a102a","#f9a8d4"]};
+ let theme="crimson";try{const saved=JSON.parse(localStorage.getItem("snipers-og-crimson-moon-v1")||"{}");if(saved&&labels[saved.theme])theme=saved.theme;}catch(e){}
+ document.documentElement.dataset.ogTheme=theme;
+ const pair=accents[theme],orb=orbs[theme];document.documentElement.style.setProperty("--og-accent",pair[0]);document.documentElement.style.setProperty("--og-accent-2",pair[1]);document.documentElement.style.setProperty("--og-orb-highlight",orb[0]);document.documentElement.style.setProperty("--og-orb-mid",orb[1]);document.documentElement.style.setProperty("--og-orb-dark",orb[2]);document.documentElement.style.setProperty("--og-orb-border",orb[3]);document.documentElement.style.setProperty("--og-symbol",JSON.stringify(symbols[theme]));document.querySelector(".brandmark").textContent=symbols[theme];document.getElementById("themeBrand").textContent=labels[theme];document.querySelector('meta[name="theme-color"]').content=theme==="light"?"#f2f3f5":pair[0];
+ const demoInput=document.getElementById("nitroDemoLink"),demoStatus=document.getElementById("nitroDemoStatus");
+ function generateNitroDemoLink(){const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";let token="";for(let i=0;i<16;i++)token+=alphabet[Math.floor(Math.random()*alphabet.length)];demoInput.value="https://example.invalid/discord-nitro-demo/"+token;demoStatus.textContent="Random fake demo link generated. It is not a Discord gift URL and cannot redeem Nitro.";}
+ document.getElementById("nitroDemoGenerate").addEventListener("click",generateNitroDemoLink);
+ generateNitroDemoLink();
+ document.getElementById("nitroDemoCopy").addEventListener("click",async function(){if(!demoInput.value){demoStatus.textContent="Generate a demo link first.";return;}try{await navigator.clipboard.writeText(demoInput.value);demoStatus.textContent="Fake demo link copied."; }catch(e){demoInput.focus();demoInput.select();demoStatus.textContent="Select and copy the demo link manually. It is fake and cannot redeem Nitro.";}}); 
+ const input=document.getElementById("gift"),status=document.getElementById("status");
+ document.getElementById("clear").addEventListener("click",function(){input.value="";status.textContent="Cleared. No gift code entered.";input.focus();});
+ document.getElementById("check").addEventListener("click",function(){try{const raw=String(input.value||"").trim();if(!raw)throw new Error("Paste a gift code or Discord gift link first.");let url;if(/^https:\/\//i.test(raw)){url=new URL(raw);}else{if(!/^[A-Za-z0-9_-]{8,128}$/.test(raw))throw new Error("That does not look like a Discord gift code. Check the characters and try again.");url=new URL("https://discord.gift/"+encodeURIComponent(raw));}if(url.protocol!=="https:"||!["discord.gift","www.discord.gift","discord.com","www.discord.com"].includes(url.hostname.toLowerCase()))throw new Error("Use an official HTTPS Discord gift link.");if(url.hostname.toLowerCase().endsWith("discord.gift")&&!/^\/[A-Za-z0-9_-]{8,128}\/?$/.test(url.pathname))throw new Error("That Discord gift link path doesn't look valid.");if(url.hostname.toLowerCase().endsWith("discord.com")&&!/^\/gifts\/[A-Za-z0-9_-]{8,128}\/?$/.test(url.pathname))throw new Error("Use a Discord gift URL such as discord.com/gifts/CODE.");status.textContent="Format looks valid. Opening Discord — redemption status is not verified.";window.location.assign(url.href);}catch(error){status.textContent=error.message;}});
+})();
+
+// Nitro controls bridge to the same-origin dashboard engine and shared local watchlist.
+(function(){
+ const frame=document.createElement("iframe");
+ frame.title="SNIPERS OG dashboard engine";
+ frame.tabIndex=-1;
+ frame.setAttribute("aria-hidden","true");
+ frame.style.cssText="position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0";
+ frame.src="./index.html?nitro-engine=1";
+ document.body.appendChild(frame);
+ const $=id=>document.getElementById(id), status=$("nitroToolsStatus");
+ let ready=false;
+ frame.addEventListener("load",()=>{
+  ready=true;
+  const d=frame.contentDocument;
+  const saved=(()=>{try{return JSON.parse(localStorage.getItem("snipers-og-crimson-moon-v1")||"{}")}catch(e){return {}}})();
+  $("nitroWebhook").value=saved.discordWebhook||"";
+  $("nitroWebhookStatus").textContent=saved.discordWebhook?"Webhook configured in this browser.":"No webhook configured yet.";
+  status.textContent="Connected to your saved dashboard Names list.";
+ });
+ function engine(){if(!ready)throw Error("Dashboard engine is still loading. Wait a moment and try again.");return frame.contentDocument}
+ function click(id){const el=engine().getElementById(id);if(!el)throw Error("Dashboard control not found: "+id);el.click()}
+ function set(id,value){const el=engine().getElementById(id);if(!el)throw Error("Dashboard setting not found: "+id);el.value=value;el.dispatchEvent(new Event("change",{bubbles:true}))}
+ $("nitroGenerate").addEventListener("click",()=>{try{set("genLength",$("nitroNameLength").value);set("genCount",$("nitroNameCount").value);click("generate");status.textContent=engine().getElementById("autoGenerateState").textContent}catch(e){status.textContent=e.message}});
+ $("nitroAutoGenerate").addEventListener("click",()=>{try{set("genLength",$("nitroNameLength").value);set("genCount",$("nitroNameCount").value);click("autoGenerate");status.textContent=engine().getElementById("autoGenerateState").textContent}catch(e){status.textContent=e.message}});
+ $("nitroAutoPilot").addEventListener("click",()=>{try{set("genLength",$("nitroNameLength").value);set("genCount",$("nitroNameCount").value);click("autoPilotStart");status.textContent=engine().getElementById("autoPilotDetail").textContent}catch(e){status.textContent=e.message}});
+ $("nitroAutoScan").addEventListener("click",()=>{try{click("autoScanStart");status.textContent=engine().getElementById("autoScanDetail").textContent}catch(e){status.textContent=e.message}});
+ $("nitroStop").addEventListener("click",()=>{try{const d=engine();["autoGenerate","autoPilotStop","autoScanStop"].forEach(id=>{const el=d.getElementById(id);if(el&&((id==="autoGenerate"&&el.textContent.includes("Stop"))||(id!=="autoGenerate"&&!el.disabled)))el.click()});status.textContent="Stop requested for automatic generation, bulk generation and checking.";$("nitroBulkStatus").textContent="Stop requested for bulk generation."}catch(e){status.textContent=e.message}});
+ $("nitroWebhookSave").addEventListener("click",()=>{try{const d=engine();d.getElementById("discordWebhook").value=$("nitroWebhook").value.trim();d.getElementById("savePrefs").click();$("nitroWebhookStatus").textContent=d.getElementById("prefState").textContent||"Webhook settings saved."; }catch(e){$("nitroWebhookStatus").textContent=e.message}});
+ $("nitroWebhookTest").addEventListener("click",()=>{try{const d=engine();d.getElementById("discordWebhook").value=$("nitroWebhook").value.trim();d.getElementById("testWebhook").click();$("nitroWebhookStatus").textContent="Test alert requested. Check your Discord channel."; }catch(e){$("nitroWebhookStatus").textContent=e.message}});
+})();
+</script>
+<script>
+(function(){
+ const $=id=>document.getElementById(id);
+ const token=()=>{const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";let out="";for(let i=0;i<20;i++)out+=chars[Math.floor(Math.random()*chars.length)];return out;};
+ function checkFormat(raw){
+  try{
+   const value=raw.trim();if(!value)return {ok:false,reason:"Empty line"};
+   let u;if(/^https:\/\//i.test(value))u=new URL(value);else return {ok:false,reason:"Paste a full HTTPS Discord gift URL"};
+   const host=u.hostname.toLowerCase();
+   if(u.protocol!=="https:"||u.search||u.hash)return {ok:false,reason:"Unsupported URL format"};
+   if((host==="discord.gift"||host==="www.discord.gift")&&/^\/[A-Za-z0-9_-]{8,128}\/?$/.test(u.pathname))return {ok:true,url:"https://discord.gift/"+u.pathname.split("/").filter(Boolean)[0]};
+   if((host==="discord.com"||host==="www.discord.com")&&/^\/gifts\/[A-Za-z0-9_-]{8,128}\/?$/.test(u.pathname))return {ok:true,url:"https://discord.com/gifts/"+u.pathname.split("/").filter(Boolean)[1]};
+   return {ok:false,reason:"Not a supported Discord gift URL"};
+  }catch(e){return {ok:false,reason:"Invalid URL"};}
+ }
+ $("nitroBulkCheck").addEventListener("click",()=>{
+  const lines=$("nitroBulkLinks").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),seen=new Set(),out=[];
+  if(!lines.length){$("nitroBulkCheckStatus").textContent="Paste one or more gift links first.";return;}
+  let valid=0,duplicates=0;
+  for(const line of lines){const result=checkFormat(line);if(!result.ok){out.push("NOT SUPPORTED — "+line+" ("+result.reason+")");continue;}if(seen.has(result.url)){duplicates++;out.push("DUPLICATE — "+result.url);continue;}seen.add(result.url);valid++;out.push("FORMAT OK — "+result.url);}
+  $("nitroBulkLinks").value=out.join("\n");
+  $("nitroBulkCheckStatus").textContent=valid+" unique URL(s) with supported format; "+duplicates+" duplicate(s); "+(lines.length-valid-duplicates)+" unsupported line(s). This does not verify gift validity or redemption.";
+ });
+ $("nitroBulkClear").addEventListener("click",()=>{$("nitroBulkLinks").value="";$("nitroBulkCheckStatus").textContent="Cleared. Paste gift links to check their format.";});
+ $("nitroBulkDemoGenerate").addEventListener("click",()=>{
+  const count=Number($("nitroBulkDemoCount").value)||10,items=Array.from({length:count},()=> "https://example.invalid/discord-nitro-demo/"+token());
+  $("nitroBulkDemoOutput").value=items.join("\n");
+  $("nitroBulkDemoStatus").textContent=count+" fake demo links generated. They use a reserved nonfunctional domain and cannot redeem Nitro.";
+ });
+ $("nitroBulkDemoDownload").addEventListener("click",()=>{
+  const content=$("nitroBulkDemoOutput").value;
+  if(!content){$("nitroBulkDemoStatus").textContent="Generate a demo batch first.";return;}
+  const blob=new Blob([content+"\n"],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="fake-nitro-demo-links.txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  $("nitroBulkDemoStatus").textContent="Downloaded fake demo links. These cannot redeem Nitro.";
+ });
+})();
+</script>
+</body></html>

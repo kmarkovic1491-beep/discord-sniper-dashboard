@@ -801,6 +801,44 @@ initializeDiscordAuth();
 
 })();
 </script>
+<script>
+/* NITRO_STANDALONE_NAV_V1 — independent navigation fallback for mobile Safari. */
+(function(){
+  function openNitroStandalone(event){
+    if(event){event.preventDefault();event.stopPropagation();}
+    var target=document.getElementById("section-nitro");
+    var main=document.querySelector("main.main");
+    if(!target||!main||!main.contains(target)) return;
+    main.querySelectorAll('.section[id^="section-"]').forEach(function(section){
+      var active=section===target;
+      section.hidden=!active;
+      section.classList.toggle("active",active);
+      section.style.setProperty("display",active?"block":"none","important");
+      if(active)section.removeAttribute("aria-hidden");
+      else section.setAttribute("aria-hidden","true");
+    });
+    document.querySelectorAll('[data-section]').forEach(function(button){
+      button.classList.toggle("active",button.getAttribute("data-section")==="nitro");
+    });
+    var crumb=document.getElementById("crumb");
+    if(crumb)crumb.textContent="NITRO";
+    window.scrollTo(0,0);
+  }
+  window.snipersOpenNitro=openNitroStandalone;
+  document.addEventListener("click",function(event){
+    var button=event.target&&event.target.closest?event.target.closest('[data-section="nitro"]'):null;
+    if(button)openNitroStandalone(event);
+  },true);
+  document.addEventListener("touchend",function(event){
+    var button=event.target&&event.target.closest?event.target.closest('[data-section="nitro"]'):null;
+    if(button)openNitroStandalone(event);
+  },{capture:true,passive:false});
+  document.addEventListener("pointerup",function(event){
+    var button=event.target&&event.target.closest?event.target.closest('[data-section="nitro"]'):null;
+    if(button)openNitroStandalone(event);
+  },true);
+})();
+</script>
 <style>
 /* NAVIGATION FIX: obvious desktop rail toggle + mobile show/hide control */
 .nav-toggle{position:fixed!important;left:230px!important;top:50%!important;transform:translateY(-50%)!important;z-index:100000!important;display:grid!important;place-items:center!important;width:36px!important;height:48px!important;margin:0!important;border:1px solid rgba(255,255,255,.3)!important;border-radius:0 12px 12px 0!important;background:rgba(34,20,34,.96)!important;color:#fff!important;font-size:25px!important;box-shadow:0 4px 18px #0008!important}

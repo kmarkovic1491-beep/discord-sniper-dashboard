@@ -328,56 +328,77 @@ app.post("/notify", async (req, res) => {
 });
 
 
-// SNIPERS OG experimental single-name checker.
-// ClaimCord references Discord's undocumented unauthenticated signup-check route.
-// This is unofficial and may stop working at any time. No proxies, account tokens,
-// parallel requests, or rate-limit bypasses are used. Bulk scanning stays disabled.
-let lastAvailabilityRequestAt = 0;
-const availabilityLastByIp = new Map();
-const AVAILABILITY_GLOBAL_GAP_MS = 1500;
-const AVAILABILITY_IP_GAP_MS = 3000;
+// SNIPERS OG Apify-backed Discord username checker.
+// Keep APIFY_API_TOKEN on the server only; never expose it to the browser.
+// The Actor charges only for confirmed checks and returns rate-limited/blocked names as unconfirmed.
+const APIFY_ACTOR_ENDPOINT = "https://api.apify.com/v2/acts/neverempty~discord-username-checker/run-sync-get-dataset-items";
+const apifyRequestTimes = new Map();
+async function runApifyUsernameChecks(usernames) {
+  if (!process.env.APIFY_API_TOKEN) {
+    const error = new Error("Apify is not connected yet. Add APIFY_API_TOKEN to the Render service environment.");
+    error.statusCode = 503;
+    throw error;
+  }
+  const response = await fetch(APIFY_ACTOR_ENDPOINT + "?token=" + encodeURIComponent(process.env.APIFY_API_TOKEN), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ usernames }),
+    signal: AbortSignal.timeout(180000)
+  });
+  let rows = [];
+  try { rows = await response.json(); } catch (_) {}
+  if (!response.ok) {
+    const error = new Error("Apify Actor request failed (HTTP " + response.status + ").");
+    error.statusCode = response.status === 429 ? 429 : 502;
+    throw error;
+  }
+  if (!Array.isArray(rows)) {
+    const error = new Error("Apify returned an unexpected result. No usernames were marked available.");
+    error.statusCode = 502;
+    throw error;
+  }
+  return rows;
+}
+function normalizeApifyRow(row) {
+  const status = String(row?.status || "").toLowerCase();
+  if (status === "available" && row.available === true) return { status: "AVAILABLE", checked: true, source: "apify-neverempty" };
+  if (status === "taken" && row.taken === true) return { status: "TAKEN", checked: true, source: "apify-neverempty" };
+  if (status === "invalid" || status === "invalid-input") return { status: "INVALID", checked: false, source: "apify-neverempty", error: row.reasonMessage || row.reason || "Discord rejected this username format." };
+  return { status: "UNCONFIRMED", checked: false, source: "apify-neverempty", error: row?.note || status || "No confirmed answer from Discord." };
+}
 app.post("/api/check", async (req, res) => {
-  const username = String(req.body?.username || "").trim().toLowerCase();
+  const username = String(req.body?.username || "").trim().replace(/^@/, "").toLowerCase();
   if (!/^[a-z0-9._]{2,32}$/.test(username) || username.startsWith(".") || username.endsWith(".") || username.includes("..")) {
     return res.status(400).json({ status: "INVALID", checked: false, error: "Enter a valid Discord username." });
   }
-  const now = Date.now();
-  const ip = String(req.ip || "unknown");
-  const wait = Math.max(0, AVAILABILITY_GLOBAL_GAP_MS - (now - lastAvailabilityRequestAt), AVAILABILITY_IP_GAP_MS - (now - (availabilityLastByIp.get(ip) || 0)));
-  if (wait > 0) return res.status(429).json({ status: "UNCONFIRMED", checked: false, retryAfterMs: wait, error: "Please wait before checking another username. The checker does not bypass Discord rate limits." });
-  lastAvailabilityRequestAt = now;
-  availabilityLastByIp.set(ip, now);
   try {
-    const upstream = await fetch("https://discord.com/api/v9/unique-username/username-attempt-unauthed", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json", "User-Agent": "SNIPERS-OG-Username-Checker/1.0" },
-      body: JSON.stringify({ username }),
-      signal: AbortSignal.timeout(10000)
-    });
-    let payload = {};
-    try { payload = await upstream.json(); } catch (_) {}
-    if (upstream.status === 429) {
-      const retryHeader = Number(upstream.headers.get("retry-after") || 0);
-      const retryAfterMs = Math.max(3000, retryHeader > 0 ? retryHeader * 1000 : 10000);
-      return res.status(429).json({ status: "UNCONFIRMED", checked: false, retryAfterMs, error: "Discord rate-limited this check. Wait before trying again." });
-    }
-    if (!upstream.ok) {
-      return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Discord's unofficial check endpoint returned HTTP " + upstream.status + ". No availability result was recorded." });
-    }
-    if (typeof payload.taken !== "boolean") {
-      return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Discord returned an unexpected response. No availability result was recorded." });
-    }
-    return res.json({
-      username,
-      status: payload.taken ? "TAKEN" : "AVAILABLE",
-      checked: true,
-      checkedAt: new Date().toISOString(),
-      source: "discord-unofficial-signup-check",
-      note: "Unofficial point-in-time result; it does not reserve the username."
+    const rows = await runApifyUsernameChecks([username]);
+    const row = rows.find(item => String(item?.username || item?.inputUsername || "").toLowerCase() === username) || rows[0];
+    if (!row) return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Apify returned no result for this username." });
+    const result = normalizeApifyRow(row);
+    return res.status(result.checked || result.status === "INVALID" ? 200 : 503).json({
+      username, ...result, checkedAt: row.checkedAt || new Date().toISOString(),
+      note: result.checked ? "Point-in-time result; availability can change immediately." : undefined
     });
   } catch (error) {
-    console.error("Unofficial username check failed:", error.message);
-    return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Could not reach Discord's unofficial check endpoint. Try again later." });
+    console.error("Apify username check failed:", error.message);
+    return res.status(error.statusCode || 502).json({ status: "UNCONFIRMED", checked: false, error: error.message });
+  }
+});
+app.post("/api/check-bulk", async (req, res) => {
+  const raw = req.body?.usernames;
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > 1000) {
+    return res.status(400).json({ error: "Send between 1 and 1,000 usernames." });
+  }
+  const usernames = [...new Set(raw.map(value => String(value || "").trim().replace(/^@/, "").toLowerCase()).filter(value => /^[a-z0-9._]{2,32}$/.test(value) && !value.startsWith(".") && !value.endsWith(".") && !value.includes("..")))];
+  if (!usernames.length) return res.status(400).json({ error: "No valid usernames were supplied." });
+  try {
+    const rows = await runApifyUsernameChecks(usernames);
+    const results = rows.map(row => ({ username: String(row?.username || row?.inputUsername || "").toLowerCase(), ...normalizeApifyRow(row), checkedAt: row?.checkedAt || null }));
+    return res.json({ results, requested: usernames.length, returned: results.length, provider: "apify-neverempty" });
+  } catch (error) {
+    console.error("Apify bulk check failed:", error.message);
+    return res.status(error.statusCode || 502).json({ error: error.message, provider: "apify-neverempty" });
   }
 });
 app.get("/api/check", (req, res) => {

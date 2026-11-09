@@ -335,7 +335,9 @@ app.post("/notify", async (req, res) => {
 const DISCORD_USERNAME_CHECK_URL = "https://discord.com/api/v9/unique-username/username-attempt-unauthed";
 const DISCORD_CHECK_MIN_INTERVAL_MS = 2000;
 const DISCORD_MAX_AUTOWAIT_MS = 30000;
+const DISCORD_CHECK_CACHE_TTL_MS = 30000;
 const discordCheckCache = new Map();
+const discordCheckInFlight = new Map();
 let discordCheckQueue = Promise.resolve();
 let lastDiscordCheckAt = 0;
 let discordRateLimitUntil = 0;
@@ -363,10 +365,20 @@ function validateDiscordUsername(username) {
     !username.includes("..");
 }
 function queueDiscordCheck(username) {
+  const cached = discordCheckCache.get(username);
+  if (cached && Date.now() - cached.checkedAtMs < DISCORD_CHECK_CACHE_TTL_MS) {
+    return Promise.resolve({ ...cached.result, cached: true });
+  }
+  const existing = discordCheckInFlight.get(username);
+  if (existing) {
+    return existing.then(result => ({ ...result, cached: true, deduplicated: true }));
+  }
+
   const task = discordCheckQueue.then(async () => {
-    const cached = discordCheckCache.get(username);
-    if (cached && Date.now() - cached.checkedAtMs < 15000) {
-      return { ...cached.result, cached: true };
+    // Another request may have completed this username while this task waited.
+    const queuedCache = discordCheckCache.get(username);
+    if (queuedCache && Date.now() - queuedCache.checkedAtMs < DISCORD_CHECK_CACHE_TTL_MS) {
+      return { ...queuedCache.result, cached: true };
     }
     const now = Date.now();
     const cooldownMs = Math.max(0, discordRateLimitUntil - now);
@@ -425,7 +437,12 @@ function queueDiscordCheck(username) {
     discordCheckCache.set(username, { result, checkedAtMs: Date.now() });
     return result;
   });
+
+  discordCheckInFlight.set(username, task);
   discordCheckQueue = task.catch(() => {});
+  task.finally(() => {
+    if (discordCheckInFlight.get(username) === task) discordCheckInFlight.delete(username);
+  }).catch(() => {});
   return task;
 }
 

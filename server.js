@@ -328,86 +328,107 @@ app.post("/notify", async (req, res) => {
 });
 
 
-// SNIPERS OG Apify-backed Discord username checker.
-// Keep APIFY_API_TOKEN on the server only; never expose it to the browser.
-// The Actor charges only for confirmed checks and returns rate-limited/blocked names as unconfirmed.
-const APIFY_ACTOR_ENDPOINT = "https://api.apify.com/v2/acts/neverempty~discord-username-checker/run-sync-get-dataset-items";
-const apifyRequestTimes = new Map();
-async function runApifyUsernameChecks(usernames) {
-  if (!process.env.APIFY_API_TOKEN) {
-    const error = new Error("Apify is not connected yet. Add APIFY_API_TOKEN to the Render service environment.");
-    error.statusCode = 503;
-    throw error;
-  }
-  const response = await fetch(APIFY_ACTOR_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": "Bearer " + process.env.APIFY_API_TOKEN
-    },
-    body: JSON.stringify({ usernames }),
-    signal: AbortSignal.timeout(180000)
+// SNIPERS OG first-party checker.
+// This backend calls Discord's unauthenticated username-attempt endpoint directly.
+// It uses no Apify/Pomelo account, proxies, user token, or CAPTCHA bypass.
+// Discord may change this undocumented endpoint or rate-limit the Render server.
+const DISCORD_USERNAME_CHECK_URL = "https://discord.com/api/v9/unique-username/username-attempt-unauthed";
+const DISCORD_CHECK_MIN_INTERVAL_MS = 1500;
+const discordCheckCache = new Map();
+let discordCheckQueue = Promise.resolve();
+let lastDiscordCheckAt = 0;
+
+function normalizeUsernameInput(value) {
+  return String(value || "").trim().replace(/^@/, "").toLowerCase();
+}
+function validateDiscordUsername(username) {
+  return /^[a-z0-9._]{2,32}$/.test(username) &&
+    !username.startsWith(".") &&
+    !username.endsWith(".") &&
+    !username.includes("..");
+}
+function queueDiscordCheck(username) {
+  const task = discordCheckQueue.then(async () => {
+    const cached = discordCheckCache.get(username);
+    if (cached && Date.now() - cached.checkedAtMs < 15000) {
+      return { ...cached.result, cached: true };
+    }
+    const waitMs = Math.max(0, DISCORD_CHECK_MIN_INTERVAL_MS - (Date.now() - lastDiscordCheckAt));
+    if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+    lastDiscordCheckAt = Date.now();
+
+    let response;
+    try {
+      response = await fetch(DISCORD_USERNAME_CHECK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ username }),
+        signal: AbortSignal.timeout(15000)
+      });
+    } catch (error) {
+      return { username, status: "UNCONFIRMED", checked: false, error: "Could not reach Discord. Try again later.", source: "snipers-og" };
+    }
+
+    let payload = null;
+    try { payload = await response.json(); } catch (_) {}
+    const checkedAt = new Date().toISOString();
+
+    if (response.status === 429) {
+      const retryAfter = Number(response.headers.get("retry-after"));
+      return {
+        username, status: "UNCONFIRMED", checked: false, error: "Discord rate-limited this check. Please wait before trying again.",
+        retryAfterSeconds: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
+        checkedAt, source: "snipers-og"
+      };
+    }
+    if (response.status === 400 || response.status === 422) {
+      return { username, status: "INVALID", checked: false, error: payload?.message || payload?.errors?.username?._errors?.[0]?.message || "Discord rejected this username format.", checkedAt, source: "snipers-og" };
+    }
+    if (!response.ok) {
+      return { username, status: "UNCONFIRMED", checked: false, error: "Discord returned HTTP " + response.status + ". No availability result was assumed.", checkedAt, source: "snipers-og" };
+    }
+    if (!payload || typeof payload.taken !== "boolean") {
+      return { username, status: "UNCONFIRMED", checked: false, error: "Discord returned an unrecognized response. No availability result was assumed.", checkedAt, source: "snipers-og" };
+    }
+
+    const result = {
+      username, status: payload.taken ? "TAKEN" : "AVAILABLE", checked: true,
+      taken: payload.taken, available: !payload.taken, checkedAt, source: "snipers-og",
+      note: "Point-in-time result; availability can change immediately."
+    };
+    discordCheckCache.set(username, { result, checkedAtMs: Date.now() });
+    return result;
   });
-  let payload = null;
-  try { payload = await response.json(); } catch (_) {}
-  if (!response.ok) {
-    const apiError = payload?.error || payload;
-    const detail = [apiError?.type, apiError?.message].filter(Boolean).join(": ");
-    const error = new Error("Apify Actor request failed (HTTP " + response.status + ")" + (detail ? " — " + detail : "."));
-    error.statusCode = response.status === 429 || response.status === 403 ? response.status : 502;
-    console.error("Apify API rejected the request:", JSON.stringify({ httpStatus: response.status, type: apiError?.type || null, message: apiError?.message || null }));
-    throw error;
-  }
-  const rows = payload;
-  if (!Array.isArray(rows)) {
-    const error = new Error("Apify returned an unexpected result. No usernames were marked available.");
-    error.statusCode = 502;
-    throw error;
-  }
-  return rows;
+  discordCheckQueue = task.catch(() => {});
+  return task;
 }
-function normalizeApifyRow(row) {
-  const status = String(row?.status || "").toLowerCase();
-  if (status === "available" && row.available === true) return { status: "AVAILABLE", checked: true, source: "apify-neverempty" };
-  if (status === "taken" && row.taken === true) return { status: "TAKEN", checked: true, source: "apify-neverempty" };
-  if (status === "invalid" || status === "invalid-input") return { status: "INVALID", checked: false, source: "apify-neverempty", error: row.reasonMessage || row.reason || "Discord rejected this username format." };
-  return { status: "UNCONFIRMED", checked: false, source: "apify-neverempty", error: row?.note || status || "No confirmed answer from Discord." };
-}
+
 app.post("/api/check", async (req, res) => {
-  const username = String(req.body?.username || "").trim().replace(/^@/, "").toLowerCase();
-  if (!/^[a-z0-9._]{2,32}$/.test(username) || username.startsWith(".") || username.endsWith(".") || username.includes("..")) {
-    return res.status(400).json({ status: "INVALID", checked: false, error: "Enter a valid Discord username." });
+  const username = normalizeUsernameInput(req.body?.username);
+  if (!validateDiscordUsername(username)) {
+    return res.status(400).json({ username, status: "INVALID", checked: false, error: "Enter a valid Discord username." });
   }
   try {
-    const rows = await runApifyUsernameChecks([username]);
-    const row = rows.find(item => String(item?.username || item?.inputUsername || "").toLowerCase() === username) || rows[0];
-    if (!row) return res.status(502).json({ status: "UNCONFIRMED", checked: false, error: "Apify returned no result for this username." });
-    const result = normalizeApifyRow(row);
-    return res.status(result.checked || result.status === "INVALID" ? 200 : 503).json({
-      username, ...result, checkedAt: row.checkedAt || new Date().toISOString(),
-      note: result.checked ? "Point-in-time result; availability can change immediately." : undefined
-    });
+    const result = await queueDiscordCheck(username);
+    return res.status(result.checked || result.status === "INVALID" ? 200 : 503).json(result);
   } catch (error) {
-    console.error("Apify username check failed:", error.message);
-    return res.status(error.statusCode || 502).json({ status: "UNCONFIRMED", checked: false, error: error.message });
+    console.error("SNIPERS OG check failed:", error.message);
+    return res.status(502).json({ username, status: "UNCONFIRMED", checked: false, error: "The checker encountered an unexpected error." });
   }
 });
+
 app.post("/api/check-bulk", async (req, res) => {
   const raw = req.body?.usernames;
-  if (!Array.isArray(raw) || raw.length < 1 || raw.length > 1000) {
-    return res.status(400).json({ error: "Send between 1 and 1,000 usernames." });
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > 50) {
+    return res.status(400).json({ error: "Send between 1 and 50 usernames per batch." });
   }
-  const usernames = [...new Set(raw.map(value => String(value || "").trim().replace(/^@/, "").toLowerCase()).filter(value => /^[a-z0-9._]{2,32}$/.test(value) && !value.startsWith(".") && !value.endsWith(".") && !value.includes("..")))];
+  const usernames = [...new Set(raw.map(normalizeUsernameInput).filter(validateDiscordUsername))];
   if (!usernames.length) return res.status(400).json({ error: "No valid usernames were supplied." });
-  try {
-    const rows = await runApifyUsernameChecks(usernames);
-    const results = rows.map(row => ({ username: String(row?.username || row?.inputUsername || "").toLowerCase(), ...normalizeApifyRow(row), checkedAt: row?.checkedAt || null }));
-    return res.json({ results, requested: usernames.length, returned: results.length, provider: "apify-neverempty" });
-  } catch (error) {
-    console.error("Apify bulk check failed:", error.message);
-    return res.status(error.statusCode || 502).json({ error: error.message, provider: "apify-neverempty" });
+  const results = [];
+  for (const username of usernames) {
+    results.push(await queueDiscordCheck(username));
   }
+  return res.json({ results, requested: usernames.length, returned: results.length, provider: "snipers-og-direct" });
 });
 app.get("/api/check", (req, res) => {
   return res.status(405).json({ status: "UNCONFIRMED", checked: false, error: "Use POST to check one username." });

@@ -810,6 +810,62 @@ initializeDiscordAuth();
 })();
 </script>
 
+<script>
+/* FULL POOL CONTROL RECOVERY: independent handlers so this panel still works
+   even if an earlier dashboard initializer throws an error. */
+(function(){
+  const alphabet="abcdefghijklmnopqrstuvwxyz0123456789_", total=alphabet.length**4, batch=10000;
+  const key="snipers-og-full-pool-progress-v1";
+  const $=id=>document.getElementById(id);
+  function fresh(id){
+    const old=$(id); if(!old)return null;
+    const node=old.cloneNode(true); old.replaceWith(node); return node;
+  }
+  const start=fresh("fullPoolCheckStart"), stop=fresh("fullPoolCheckStop"), reset=fresh("fullPoolCheckReset");
+  const download=fresh("downloadPoolBatch"), resetExport=fresh("resetPoolExport");
+  const stateText=$("fullPoolCheckState"), progress=$("fullPoolCheckProgress");
+  const checked=$("fullPoolChecked"), available=$("fullPoolAvailable"), taken=$("fullPoolTaken"), remaining=$("fullPoolInvalid");
+  const exportText=$("poolExportState");
+  if(!start||!stop||!reset||!download||!resetExport)return;
+  let saved={cursor:0}, running=false, timer=null, exportOffset=0;
+  try{saved=Object.assign(saved,JSON.parse(localStorage.getItem(key)||"{}"));}catch(e){}
+  function encode(n){let out="";for(let i=0;i<4;i++){out=alphabet[n%37]+out;n=Math.floor(n/37);}return out;}
+  function persist(){try{localStorage.setItem(key,JSON.stringify(saved));}catch(e){if(stateText)stateText.textContent="Browser storage is full; progress may not persist.";}}
+  function render(){
+    const cursor=Math.min(total,Math.max(0,Number(saved.cursor)||0));
+    if(checked)checked.textContent=cursor.toLocaleString();
+    if(available)available.textContent="0";
+    if(taken)taken.textContent="0";
+    if(remaining)remaining.textContent=(total-cursor).toLocaleString();
+    if(progress)progress.style.width=(cursor/total*100).toFixed(3)+"%";
+    if(stateText)stateText.textContent=cursor.toLocaleString()+" / "+total.toLocaleString()+" combinations traversed locally. No Discord availability checks are performed.";
+    start.disabled=running||cursor>=total; stop.disabled=!running;
+  }
+  function step(){
+    if(!running)return;
+    saved.cursor=Math.min(total,(Number(saved.cursor)||0)+500);
+    if(saved.cursor%5000===0||saved.cursor>=total)persist();
+    render();
+    if(saved.cursor>=total){running=false;persist();render();return;}
+    timer=setTimeout(step,15);
+  }
+  start.addEventListener("click",()=>{if(running)return;running=true;render();step();});
+  stop.addEventListener("click",()=>{running=false;if(timer)clearTimeout(timer);timer=null;persist();render();});
+  reset.addEventListener("click",()=>{if(running){if(stateText)stateText.textContent="Stop the scan before resetting.";return;}if(!window.confirm("Reset local full-pool progress? Names already saved elsewhere will remain."))return;saved.cursor=0;persist();render();});
+  download.addEventListener("click",()=>{
+    if(exportOffset>=total){if(exportText)exportText.textContent="Full pool export complete. Reset export to start over.";return;}
+    const end=Math.min(total,exportOffset+batch), lines=new Array(end-exportOffset);
+    for(let i=exportOffset;i<end;i++)lines[i-exportOffset]=encode((i*104729+12345)%total);
+    const blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download="snipers-og-4c-"+String(exportOffset+1).padStart(7,"0")+"-"+String(end).padStart(7,"0")+".txt";
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    exportOffset=end;if(exportText)exportText.textContent=exportOffset.toLocaleString()+" / "+total.toLocaleString()+" names exported ("+Math.ceil(exportOffset/batch)+" of "+Math.ceil(total/batch)+" files).";
+  });
+  resetExport.addEventListener("click",()=>{exportOffset=0;if(download)download.textContent="↓ Download next 10,000 names";if(exportText)exportText.textContent="Export reset: 0 / "+total.toLocaleString()+" names downloaded.";});
+  render();
+})();
+</script>
+
 <style>
 /* NAVIGATION FIX: obvious desktop rail toggle + mobile show/hide control */
 .nav-toggle{position:fixed!important;left:230px!important;top:50%!important;transform:translateY(-50%)!important;z-index:100000!important;display:grid!important;place-items:center!important;width:36px!important;height:48px!important;margin:0!important;border:1px solid rgba(255,255,255,.3)!important;border-radius:0 12px 12px 0!important;background:rgba(34,20,34,.96)!important;color:#fff!important;font-size:25px!important;box-shadow:0 4px 18px #0008!important}

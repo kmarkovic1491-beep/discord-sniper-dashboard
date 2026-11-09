@@ -514,29 +514,6 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 :root[data-og-theme="dark"] .tutorial-kicker{color:#fff!important}
 </style>
 
-<script>
-/* EARLY_NITRO_ROUTE — define before any dashboard scripts or UI interaction. */
-window.snipersOpenNitro=function(event){
-  if(event){event.preventDefault();event.stopPropagation();}
-  var target=document.getElementById("section-nitro");
-  var main=document.querySelector("main.main");
-  if(!target||!main){console.error("Nitro section/main not found");return false;}
-  main.querySelectorAll(".section[id^='section-']").forEach(function(section){
-    var active=section===target;
-    section.hidden=!active;
-    section.classList.toggle("active",active);
-    section.style.setProperty("display",active?"block":"none","important");
-    section.setAttribute("aria-hidden",active?"false":"true");
-  });
-  document.querySelectorAll("[data-section]").forEach(function(item){
-    item.classList.toggle("active",item.getAttribute("data-section")==="nitro");
-  });
-  var crumb=document.getElementById("crumb");if(crumb)crumb.textContent="NITRO";
-  if(location.hash!=="#section-nitro")history.pushState(null,"","#section-nitro");
-  window.scrollTo(0,0);
-  return false;
-};
-</script>
 </head>
 <body>
 <div class="shell">
@@ -544,7 +521,7 @@ window.snipersOpenNitro=function(event){
 <div class="brand"><div class="brandmark">☾</div><div><div class="brandname">SNIPERS <span>OG</span></div><div class="brandtag" data-theme-brand>CRIMSON MOON</div></div></div>
 <button class="nav-toggle" id="navToggle" type="button" aria-label="Collapse navigation" aria-expanded="true" title="Collapse navigation">⌃</button>
 <div><div class="navlabel">WORKSPACE</div><nav class="nav"><button class="active" data-section="dashboard"><span class="navglyph glyph-overview">◈</span>Overview</button><button data-section="watchlist"><span class="navglyph glyph-names">⌗</span>Names</button><button data-section="generator"><span class="navglyph glyph-ideas">✧</span>Idea generator</button><button data-section="history"><span class="navglyph glyph-history">⟳</span>Activity history</button></nav></div>
-<div><div class="navlabel">CONFIGURATION</div><nav class="nav"><button data-section="settings"><span class="navglyph glyph-settings">⟡</span>Settings</button><button type="button" class="nitro-nav-link" data-section="nitro" onclick="return window.snipersOpenNitro(event)"><span class="navglyph">✦</span>NITRO SNIPER</button></nav></div>
+<div><div class="navlabel">CONFIGURATION</div><nav class="nav"><button data-section="settings"><span class="navglyph glyph-settings">⟡</span>Settings</button><button type="button" class="nitro-nav-link" data-section="nitro"><span class="navglyph">✦</span>NITRO SNIPER</button></nav></div>
 <div class="sidebottom"><div class="localpill"><span class="dot"></span> BROWSER STORAGE ACTIVE</div><div class="sidehint">Your watchlist and settings stay in this browser on this device. Username generation is local; the The dashboard can generate and organize names; live availability checking is currently unavailable.</div></div>
 </aside>
 <main class="main">
@@ -585,7 +562,7 @@ window.snipersOpenNitro=function(event){
 
 </main>
 </div>
-<button id="navmobileToggle" type="button" aria-label="Hide navigation" aria-expanded="true" title="Hide navigation">⌄</button><nav class="navmobile"><button class="active" data-section="dashboard"><b class="navglyph glyph-overview">◈</b>Home</button><button data-section="watchlist"><b class="navglyph glyph-names">⌗</b>Names</button><button data-section="generator"><b class="navglyph glyph-ideas">✧</b>Ideas</button><button data-section="history"><b class="navglyph glyph-history">⟳</b>History</button><button data-section="settings"><b class="navglyph glyph-settings">⟡</b>Settings</button><button type="button" class="nitro-nav-link" data-section="nitro" onclick="window.snipersOpenNitro(event)"><b class="navglyph">✦</b>Nitro</button></nav>
+<button id="navmobileToggle" type="button" aria-label="Hide navigation" aria-expanded="true" title="Hide navigation">⌄</button><nav class="navmobile"><button class="active" data-section="dashboard"><b class="navglyph glyph-overview">◈</b>Home</button><button data-section="watchlist"><b class="navglyph glyph-names">⌗</b>Names</button><button data-section="generator"><b class="navglyph glyph-ideas">✧</b>Ideas</button><button data-section="history"><b class="navglyph glyph-history">⟳</b>History</button><button data-section="settings"><b class="navglyph glyph-settings">⟡</b>Settings</button><button type="button" class="nitro-nav-link" data-section="nitro"><b class="navglyph">✦</b>Nitro</button></nav>
 
 
 <div class="discord-login-backdrop" id="discordLoginBackdrop" hidden>
@@ -827,50 +804,7 @@ initializeDiscordAuth();
 
 })();
 </script>
-<script>
-/* NITRO_STANDALONE_NAV_V1 — independent navigation fallback for mobile Safari. */
-(function(){
-  function openNitroStandalone(event){
-    if(event){event.preventDefault();}
-    var target=document.getElementById("section-nitro");
-    var main=document.querySelector("main.main");
-    if(!target||!main||!main.contains(target)) return;
-    if(window.location.hash!=="#section-nitro") window.location.hash="#section-nitro";
-    main.querySelectorAll('.section[id^="section-"]').forEach(function(section){
-      var active=section===target;
-      section.hidden=!active;
-      section.classList.toggle("active",active);
-      section.style.setProperty("display",active?"block":"none","important");
-      if(active)section.removeAttribute("aria-hidden");
-      else section.setAttribute("aria-hidden","true");
-    });
-    document.querySelectorAll('[data-section]').forEach(function(button){
-      button.classList.toggle("active",button.getAttribute("data-section")==="nitro");
-    });
-    var crumb=document.getElementById("crumb");
-    if(crumb)crumb.textContent="NITRO";
-    window.scrollTo(0,0);
-  }
-  window.snipersOpenNitro=openNitroStandalone;
-  /* Apply direct hash routes after startup navigation has set inline section styles. */
-  if(window.location.hash==="#section-nitro") openNitroStandalone();
-  window.addEventListener("hashchange",function(){
-    if(window.location.hash==="#section-nitro") openNitroStandalone();
-  });
-  document.addEventListener("click",function(event){
-    var button=event.target&&event.target.closest?event.target.closest('[data-section="nitro"]'):null;
-    if(button)openNitroStandalone(event);
-  },true);
-  document.addEventListener("touchend",function(event){
-    var button=event.target&&event.target.closest?event.target.closest('[data-section="nitro"]'):null;
-    if(button)openNitroStandalone(event);
-  },{capture:true,passive:false});
-  document.addEventListener("pointerup",function(event){
-    var button=event.target&&event.target.closest?event.target.closest('[data-section="nitro"]'):null;
-    if(button)openNitroStandalone(event);
-  },true);
-})();
-</script>
+
 <style>
 /* NAVIGATION FIX: obvious desktop rail toggle + mobile show/hide control */
 .nav-toggle{position:fixed!important;left:230px!important;top:50%!important;transform:translateY(-50%)!important;z-index:100000!important;display:grid!important;place-items:center!important;width:36px!important;height:48px!important;margin:0!important;border:1px solid rgba(255,255,255,.3)!important;border-radius:0 12px 12px 0!important;background:rgba(34,20,34,.96)!important;color:#fff!important;font-size:25px!important;box-shadow:0 4px 18px #0008!important}

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#100d18"><title>SNIPERS OG — Nitro</title>
+<style>
+:root{color-scheme:dark;--bg:#100d18;--panel:#1b1625;--line:#493044;--red:#ff536f;--muted:#b9adbd}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:calc(18px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 15% 0%,#592039 0,transparent 42%),var(--bg);color:#fff;font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{width:min(720px,100%);margin:0 auto}.top{display:flex;align-items:center;gap:12px;margin:8px 0 32px}.mark{width:46px;height:46px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(135deg,#ff829a,#8d193e);font-size:25px}.brand{font-weight:900;letter-spacing:.08em}.tag,.eyebrow{color:#ff829a;font-size:11px;font-weight:800;letter-spacing:.18em}.back{margin-left:auto;color:#fff;text-decoration:none;border:1px solid #674257;border-radius:12px;padding:9px 12px}
+h1{font-size:clamp(34px,9vw,56px);line-height:1.02;margin:10px 0 12px;letter-spacing:-.04em}.intro{color:var(--muted);margin:0 0 24px}.panel{padding:20px;margin:16px 0;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#241a2b,#171320);box-shadow:0 18px 45px #0004}.title{font-weight:900;letter-spacing:.08em;margin-bottom:10px}.muted{color:var(--muted);font-size:14px}label{display:block;font-size:12px;font-weight:800;margin:20px 0 8px}input{width:100%;min-height:54px;border:1px solid #654357;border-radius:13px;background:#100d18;color:#fff;padding:0 14px;font-size:16px;outline:none}input:focus{border-color:#ff829a;box-shadow:0 0 0 3px #ff536f2a}.actions{display:flex;gap:10px;margin-top:12px}.btn{min-height:50px;border:0;border-radius:13px;padding:0 17px;font-weight:900;background:linear-gradient(135deg,#ff829a,#c32e55);color:#180b12;flex:1}.btn.secondary{background:#302638;color:#fff;border:1px solid #654357;flex:0 0 auto}.status{min-height:24px;margin-top:12px;color:#e6cbd5;font-size:13px}.notice{border-left:3px solid var(--red);padding:3px 0 3px 12px;color:#e9dce6;font-size:14px}.links{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px}.links a{color:#ff9aad;font-weight:800;font-size:13px;text-decoration:none}
+@media(max-width:420px){.panel{padding:16px}.actions{flex-direction:column}.btn.secondary{flex:auto}}
+</style></head>
+<body><main class="wrap">
+<header class="top"><div class="mark">☾</div><div><div class="brand">SNIPERS OG</div><div class="tag">CRIMSON MOON</div></div><a class="back" href="./?v=nitro-back">← Dashboard</a></header>
+<div class="eyebrow">NITRO TOOLS</div><h1>NITRO SNIPER</h1><p class="intro">Keep Nitro gift links organized and open them through Discord for manual redemption.</p>
+<section class="panel"><div class="title">NITRO GIFT CODE CHECKER</div><p class="muted">Paste a Discord gift code or gift link. This checks its format and opens the official Discord redemption page. Only Discord can confirm whether a gift is real, unused, and redeemable.</p>
+<label for="gift">GIFT CODE OR LINK</label><input id="gift" type="text" inputmode="url" autocomplete="off" placeholder="Paste code or https://discord.gift/…">
+<div class="actions"><button class="btn" id="check" type="button">CHECK ON DISCORD</button><button class="btn secondary" id="clear" type="button">CLEAR</button></div><div class="status" id="status" aria-live="polite">No gift code entered. Format checks do not verify redemption.</div></section>
+<section class="panel"><div class="title">SAFETY & COMPATIBILITY</div><div class="notice">Manual helper only. It does not auto-claim Nitro, join giveaways, automate Discord accounts, or request Discord user tokens. Never paste a Discord password or user token into a sniper.</div><p class="muted">The linked NitroSniperGo project describes itself as a self-bot, uses account tokens, and warns that it violates Discord's Terms and may get accounts banned. That automation is not included here.</p><div class="links"><a href="https://discord.com/app" target="_blank" rel="noopener noreferrer">OPEN DISCORD ↗</a><a href="https://github.com/Vedza/NitroSniperGo" target="_blank" rel="noopener noreferrer">VIEW ORIGINAL PROJECT ↗</a></div></section>
+</main>
+<script>
+(function(){
+ const input=document.getElementById("gift"),status=document.getElementById("status");
+ document.getElementById("clear").addEventListener("click",function(){input.value="";status.textContent="Cleared. No gift code entered.";input.focus();});
+ document.getElementById("check").addEventListener("click",function(){
+  try{
+   const raw=String(input.value||"").trim();if(!raw)throw new Error("Paste a gift code or Discord gift link first.");
+   let url;
+   if(/^https:\/\//i.test(raw)){url=new URL(raw);}
+   else{if(!/^[A-Za-z0-9_-]{8,128}$/.test(raw))throw new Error("That does not look like a Discord gift code. Check the characters and try again.");url=new URL("https://discord.gift/"+encodeURIComponent(raw));}
+   if(url.protocol!=="https:"||!["discord.gift","www.discord.gift","discord.com","www.discord.com"].includes(url.hostname.toLowerCase()))throw new Error("Use an official HTTPS Discord gift link.");
+   if(url.hostname.toLowerCase().endsWith("discord.gift")&&!/^\/[A-Za-z0-9_-]{8,128}\/?$/.test(url.pathname))throw new Error("That Discord gift link path doesn't look valid.");
+   if(url.hostname.toLowerCase().endsWith("discord.com")&&!/^\/gifts\/[A-Za-z0-9_-]{8,128}\/?$/.test(url.pathname))throw new Error("Use a Discord gift URL such as discord.com/gifts/CODE.");
+   status.textContent="Format looks valid. Opening Discord — redemption status is not verified.";
+   window.location.assign(url.href);
+  }catch(error){status.textContent=error.message;}
+ });
+})();
+</script></body></html>

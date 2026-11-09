@@ -514,6 +514,29 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 :root[data-og-theme="dark"] .tutorial-kicker{color:#fff!important}
 </style>
 
+<script>
+/* EARLY_NITRO_ROUTE — define before any dashboard scripts or UI interaction. */
+window.snipersOpenNitro=function(event){
+  if(event){event.preventDefault();event.stopPropagation();}
+  var target=document.getElementById("section-nitro");
+  var main=document.querySelector("main.main");
+  if(!target||!main){console.error("Nitro section/main not found");return false;}
+  main.querySelectorAll(".section[id^='section-']").forEach(function(section){
+    var active=section===target;
+    section.hidden=!active;
+    section.classList.toggle("active",active);
+    section.style.setProperty("display",active?"block":"none","important");
+    section.setAttribute("aria-hidden",active?"false":"true");
+  });
+  document.querySelectorAll("[data-section]").forEach(function(item){
+    item.classList.toggle("active",item.getAttribute("data-section")==="nitro");
+  });
+  var crumb=document.getElementById("crumb");if(crumb)crumb.textContent="NITRO";
+  if(location.hash!=="#section-nitro")history.pushState(null,"","#section-nitro");
+  window.scrollTo(0,0);
+  return false;
+};
+</script>
 </head>
 <body>
 <div class="shell">
@@ -521,7 +544,7 @@ button.og-tap-feedback::after{content:"";position:absolute;inset:0;border-radius
 <div class="brand"><div class="brandmark">☾</div><div><div class="brandname">SNIPERS <span>OG</span></div><div class="brandtag" data-theme-brand>CRIMSON MOON</div></div></div>
 <button class="nav-toggle" id="navToggle" type="button" aria-label="Collapse navigation" aria-expanded="true" title="Collapse navigation">⌃</button>
 <div><div class="navlabel">WORKSPACE</div><nav class="nav"><button class="active" data-section="dashboard"><span class="navglyph glyph-overview">◈</span>Overview</button><button data-section="watchlist"><span class="navglyph glyph-names">⌗</span>Names</button><button data-section="generator"><span class="navglyph glyph-ideas">✧</span>Idea generator</button><button data-section="history"><span class="navglyph glyph-history">⟳</span>Activity history</button></nav></div>
-<div><div class="navlabel">CONFIGURATION</div><nav class="nav"><button data-section="settings"><span class="navglyph glyph-settings">⟡</span>Settings</button><button type="button" class="nitro-nav-link" data-section="nitro" onclick="window.snipersOpenNitro(event)"><span class="navglyph">✦</span>NITRO SNIPER</button></nav></div>
+<div><div class="navlabel">CONFIGURATION</div><nav class="nav"><button data-section="settings"><span class="navglyph glyph-settings">⟡</span>Settings</button><button type="button" class="nitro-nav-link" data-section="nitro" onclick="return window.snipersOpenNitro(event)"><span class="navglyph">✦</span>NITRO SNIPER</button></nav></div>
 <div class="sidebottom"><div class="localpill"><span class="dot"></span> BROWSER STORAGE ACTIVE</div><div class="sidehint">Your watchlist and settings stay in this browser on this device. Username generation is local; the The dashboard can generate and organize names; live availability checking is currently unavailable.</div></div>
 </aside>
 <main class="main">

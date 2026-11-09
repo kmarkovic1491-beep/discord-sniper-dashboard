@@ -24,11 +24,28 @@ body{min-height:100vh;margin:0;padding:24px 16px calc(32px + env(safe-area-inset
 .nitro-status{min-height:24px;margin-top:10px;color:var(--muted);font-size:12px}
 .nitro-panel .notice{margin:10px 0}
 .nitro-links{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+ .nitro-tutorial summary{cursor:pointer;font-weight:850;letter-spacing:.8px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px}.nitro-tutorial summary::-webkit-details-marker{display:none}.nitro-tutorial summary:after{content:"＋";color:var(--og-accent-2);font-size:18px}.nitro-tutorial[open] summary:after{content:"−"}.nitro-tutorial ol{padding-left:22px;margin:15px 0 4px}.nitro-tutorial li{padding:0 0 12px 5px;color:var(--text)}.nitro-tutorial li::marker{color:var(--og-accent-2);font-weight:900}.nitro-tutorial li span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.nitro-tutorial .notice{margin-top:12px}
 @media(max-width:850px){body{padding:16px 14px calc(30px + env(safe-area-inset-bottom))}.nitro-top{margin-bottom:28px}.nitro-hero{margin-top:5px}.nitro-hero .heroart{width:76px;height:76px}.nitro-panel{padding:17px}.nitro-actions{flex-direction:column}.nitro-actions .btn.secondary{flex:auto}}
 </style></head>
 <body><main class="nitro-wrap">
 <header class="nitro-top"><div class="brandmark">☾</div><div><div class="brandname">SNIPERS <span>OG</span></div><div class="brandtag" id="themeBrand">CRIMSON MOON</div></div><a class="nitro-back" href="./">← Dashboard</a></header>
 <div class="nitro-hero"><div><div class="eyebrow">NITRO TOOLS</div><h1>NITRO SNIPER</h1><p>Keep Nitro gift links organized and open them through Discord for manual redemption.</p></div><div class="heroart"></div></div>
+<section class="panel nitro-panel nitro-tutorial" id="nitro-tutorial">
+<details open>
+<summary>📘 NITRO PAGE TUTORIAL · HOW TO USE EVERYTHING</summary>
+<p class="muted" style="margin-top:12px">A quick walkthrough of the tools on this page. Tap the heading to collapse or reopen this guide.</p>
+<ol>
+<li><b>Check a Nitro gift link</b><span>Paste a Discord gift code or official gift URL into NITRO GIFT CODE CHECKER, then tap CHECK ON DISCORD. This validates the link format and opens Discord; only Discord can confirm whether the gift is genuine, unused, and redeemable.</span></li>
+<li><b>Choose the gift type</b><span>In NITRO GIFT TYPE, select Nitro (full) or Nitro Basic to label the gift you are organizing. This selection is manual and does not identify the product from a code.</span></li>
+<li><b>Generate username ideas</b><span>Under NITRO USERNAME SNIPER CONTROLS, choose username length and names per batch, then tap GENERATE NAMES. New ideas are saved to the same Names list used by the main dashboard.</span></li>
+<li><b>Turn on auto-generate</b><span>Tap AUTO-GENERATE to keep creating and saving username ideas. Tap it again or use STOP AUTOMATION to stop.</span></li>
+<li><b>Generate and check names</b><span>Tap AUTO-GEN + CHECK to generate candidates and send them to the experimental username availability checker. CHECK SAVED NAMES scans names already in your watchlist.</span></li>
+<li><b>Set up webhook alerts</b><span>Paste a Discord channel webhook URL under DISCORD WEBHOOK ALERTS, tap SAVE WEBHOOK, then SEND TEST ALERT. Alerts are sent for newly confirmed AVAILABLE username results. Keep the URL private.</span></li>
+<li><b>Stop automatic tasks</b><span>Tap STOP AUTOMATION whenever you want to stop auto-generation and automatic checking. Keep this page open while an automatic mode is running.</span></li>
+</ol>
+<div class="notice">Important: username availability checking is experimental and unofficial, and may be rate-limited. It checks Discord usernames — it does not check Nitro gift-code validity. No tool here auto-claims gifts or needs your Discord password or user token.</div>
+</details>
+</section>
 <section class="panel nitro-panel"><div class="paneltitle">NITRO GIFT CODE CHECKER</div><p class="muted">Paste a Discord gift code or gift link. This checks its format and opens the official Discord redemption page. Only Discord can confirm whether the gift is real, unused, and redeemable.</p>
 <label class="fieldlabel" for="gift">Gift code or link</label><input id="gift" type="text" inputmode="url" autocomplete="off" placeholder="Paste code or https://discord.gift/…">
 <div class="nitro-actions"><button class="btn" id="check" type="button">CHECK ON DISCORD</button><button class="btn secondary" id="clear" type="button">CLEAR</button></div><div class="nitro-status" id="status" aria-live="polite">No gift code entered. Format checks do not verify redemption.</div></section>

@@ -802,28 +802,13 @@ initializeDiscordAuth();
 @media(max-width:850px){.nav-toggle{display:none!important}#navmobileToggle{display:grid!important;place-items:center!important;position:fixed!important;right:14px!important;bottom:calc(78px + env(safe-area-inset-bottom,0px))!important;z-index:100001!important;width:42px!important;height:34px!important;border:1px solid rgba(255,255,255,.32)!important;border-radius:12px!important;background:rgba(30,22,38,.96)!important;color:#fff!important;font-size:22px!important;box-shadow:0 4px 18px #0009!important}.navmobile.nav-hidden{display:none!important}.navmobile{z-index:100000!important}}
 </style>\n\n\n<script id="snipers-mobile-nitro-emergency">
 (function(){
-  document.addEventListener("click",function(event){
-    var button=event.target&&event.target.closest&&event.target.closest(".navmobile button[data-section='nitro']");
-    if(!button)return;
-    var main=document.querySelector("main.main");
-    var target=document.getElementById("section-nitro");
-    if(!main||!target||!main.contains(target))return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    main.querySelectorAll(".section[id^='section-']").forEach(function(section){
-      var active=section===target;
-      section.classList.toggle("active",active);
-      section.hidden=!active;
-      section.style.setProperty("display",active?"block":"none","important");
-      if(active)section.removeAttribute("aria-hidden");
-    });
-    document.querySelectorAll("[data-section]").forEach(function(item){
-      item.classList.toggle("active",item.getAttribute("data-section")==="nitro");
-    });
-    var crumb=document.getElementById("crumb");
-    if(crumb)crumb.textContent="NITRO";
-    window.scrollTo(0,0);
-  },true);
+ document.addEventListener("click",function(event){
+  var button=event.target&&event.target.closest&&event.target.closest(".navmobile button[data-section='nitro']");
+  if(!button)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  window.location.assign(new URL("nitro.html",window.location.href).href);
+ },true);
 })();
 </script>
 </body>

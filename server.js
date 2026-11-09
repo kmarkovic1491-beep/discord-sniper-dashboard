@@ -339,19 +339,27 @@ async function runApifyUsernameChecks(usernames) {
     error.statusCode = 503;
     throw error;
   }
-  const response = await fetch(APIFY_ACTOR_ENDPOINT + "?token=" + encodeURIComponent(process.env.APIFY_API_TOKEN), {
+  const response = await fetch(APIFY_ACTOR_ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "Authorization": "Bearer " + process.env.APIFY_API_TOKEN
+    },
     body: JSON.stringify({ usernames }),
     signal: AbortSignal.timeout(180000)
   });
-  let rows = [];
-  try { rows = await response.json(); } catch (_) {}
+  let payload = null;
+  try { payload = await response.json(); } catch (_) {}
   if (!response.ok) {
-    const error = new Error("Apify Actor request failed (HTTP " + response.status + ").");
-    error.statusCode = response.status === 429 ? 429 : 502;
+    const apiError = payload?.error || payload;
+    const detail = [apiError?.type, apiError?.message].filter(Boolean).join(": ");
+    const error = new Error("Apify Actor request failed (HTTP " + response.status + ")" + (detail ? " — " + detail : "."));
+    error.statusCode = response.status === 429 || response.status === 403 ? response.status : 502;
+    console.error("Apify API rejected the request:", JSON.stringify({ httpStatus: response.status, type: apiError?.type || null, message: apiError?.message || null }));
     throw error;
   }
+  const rows = payload;
   if (!Array.isArray(rows)) {
     const error = new Error("Apify returned an unexpected result. No usernames were marked available.");
     error.statusCode = 502;

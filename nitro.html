@@ -65,13 +65,17 @@ body{min-height:100vh;margin:0;padding:24px 16px calc(32px + env(safe-area-inset
 <div class="notice">Availability checks use the experimental, unofficial checker. Discord may rate-limit it; only results explicitly confirmed by the service are marked AVAILABLE or TAKEN. Confirm in Discord before acting.</div>
 </section>
 <section class="panel nitro-panel" id="nitro-bulk-tools">
-<div class="paneltitle">🧬 NITRO BULK USERNAME GENERATOR</div>
-<p class="muted">Generate large local batches of username candidates and save up to 500 into your shared Names watchlist. Bulk generation is local and does not verify Discord availability.</p>
-<label class="fieldlabel" for="nitroBulkStyle">Username style</label>
-<select id="nitroBulkStyle"><option value="all">All styles mixed</option><option value="eboy">E-boy / edgy</option><option value="cowboy">Cowboy / western</option><option value="dark">Dark / mysterious</option><option value="soft">Soft / dreamy</option><option value="gamer">Gamer / leetspeak</option><option value="cyber">Cyber / glitch</option><option value="alt">Alt / underground</option><option value="aesthetic">Aesthetic / vowel-rich</option><option value="alternating">Alternating vowels / consonants</option><option value="novowels">No vowels / rare-looking</option><option value="letters">4L · letters only</option><option value="numbers">Numbers only</option><option value="alphanumeric">Letters + numbers</option><option value="underscore">Underscore style</option><option value="repeat">Repeating characters</option></select>
-<div class="nitro-actions"><button class="btn" id="nitroBulkStart" type="button">▶ START BULK GENERATOR</button><button class="btn secondary" id="nitroBulkStop" type="button">■ STOP BULK</button></div>
-<div class="nitro-actions"><button class="btn secondary" id="nitroBulkDownload" type="button">↓ DOWNLOAD GENERATED MATCHES</button><button class="btn secondary" id="nitroBulkPool" type="button">↓ DOWNLOAD NEXT 10,000</button></div>
-<div class="nitro-status" id="nitroBulkStatus" aria-live="polite">Ready. Candidates are generated locally; no availability check is performed by Bulk Generator.</div>
+<div class="paneltitle">🧬 NITRO BULK LINK TOOLS</div>
+<p class="muted">Paste gift links you already have to check their URL format and remove duplicates, or generate batches of clearly fake demo links for testing. Random demo links are not Discord gifts and cannot redeem Nitro.</p>
+<label class="fieldlabel" for="nitroBulkLinks">Paste existing Nitro gift links (one per line)</label>
+<textarea id="nitroBulkLinks" rows="5" placeholder="https://discord.gift/…&#10;https://discord.com/gifts/…"></textarea>
+<div class="nitro-actions"><button class="btn" id="nitroBulkCheck" type="button">CHECK LINK FORMATS</button><button class="btn secondary" id="nitroBulkClear" type="button">CLEAR</button></div>
+<div class="nitro-status" id="nitroBulkCheckStatus" aria-live="polite">Format-only check. It cannot verify whether a gift exists, is unused, or can be redeemed.</div>
+<label class="fieldlabel" for="nitroBulkDemoCount">Number of fake demo links</label>
+<select id="nitroBulkDemoCount"><option value="10">10 links</option><option value="25">25 links</option><option value="50">50 links</option><option value="100">100 links</option></select>
+<div class="nitro-actions"><button class="btn" id="nitroBulkDemoGenerate" type="button">GENERATE DEMO BATCH</button><button class="btn secondary" id="nitroBulkDemoDownload" type="button">DOWNLOAD DEMO LIST</button></div>
+<label class="fieldlabel" for="nitroBulkDemoOutput">Fake demo links</label><textarea id="nitroBulkDemoOutput" rows="5" readonly placeholder="Your fake demo links will appear here…"></textarea>
+<div class="nitro-status" id="nitroBulkDemoStatus" aria-live="polite">Demo links use example.invalid and cannot redeem Nitro.</div>
 </section>
 <section class="panel nitro-panel" id="nitro-webhook-tools">
 <div class="paneltitle">🔔 DISCORD WEBHOOK ALERTS</div>
@@ -133,12 +137,47 @@ body{min-height:100vh;margin:0;padding:24px 16px calc(32px + env(safe-area-inset
  $("nitroAutoGenerate").addEventListener("click",()=>{try{set("genLength",$("nitroNameLength").value);set("genCount",$("nitroNameCount").value);click("autoGenerate");status.textContent=engine().getElementById("autoGenerateState").textContent}catch(e){status.textContent=e.message}});
  $("nitroAutoPilot").addEventListener("click",()=>{try{set("genLength",$("nitroNameLength").value);set("genCount",$("nitroNameCount").value);click("autoPilotStart");status.textContent=engine().getElementById("autoPilotDetail").textContent}catch(e){status.textContent=e.message}});
  $("nitroAutoScan").addEventListener("click",()=>{try{click("autoScanStart");status.textContent=engine().getElementById("autoScanDetail").textContent}catch(e){status.textContent=e.message}});
- $("nitroStop").addEventListener("click",()=>{try{const d=engine();["autoGenerate","autoPilotStop","autoScanStop","bulkStop"].forEach(id=>{const el=d.getElementById(id);if(el&&((id==="autoGenerate"&&el.textContent.includes("Stop"))||(id!=="autoGenerate"&&!el.disabled)))el.click()});status.textContent="Stop requested for automatic generation, bulk generation and checking.";$("nitroBulkStatus").textContent="Stop requested for bulk generation."}catch(e){status.textContent=e.message}});
- $("nitroBulkStart").addEventListener("click",()=>{try{const d=engine();d.getElementById("bulkStyle").value=$("nitroBulkStyle").value;d.getElementById("bulkStart").click();$("nitroBulkStatus").textContent=d.getElementById("bulkState").textContent||"Bulk generation started. Local candidate generation only."}catch(e){$("nitroBulkStatus").textContent=e.message}});
- $("nitroBulkStop").addEventListener("click",()=>{try{const d=engine();d.getElementById("bulkStop").click();$("nitroBulkStatus").textContent=d.getElementById("bulkState").textContent||"Bulk generation stopped."}catch(e){$("nitroBulkStatus").textContent=e.message}});
- $("nitroBulkDownload").addEventListener("click",()=>{try{click("downloadBulkMatches");$("nitroBulkStatus").textContent=engine().getElementById("bulkExportState").textContent}catch(e){$("nitroBulkStatus").textContent=e.message}});
- $("nitroBulkPool").addEventListener("click",()=>{try{click("downloadPoolBatch");$("nitroBulkStatus").textContent=engine().getElementById("poolExportState").textContent}catch(e){$("nitroBulkStatus").textContent=e.message}});
+ $("nitroStop").addEventListener("click",()=>{try{const d=engine();["autoGenerate","autoPilotStop","autoScanStop"].forEach(id=>{const el=d.getElementById(id);if(el&&((id==="autoGenerate"&&el.textContent.includes("Stop"))||(id!=="autoGenerate"&&!el.disabled)))el.click()});status.textContent="Stop requested for automatic generation, bulk generation and checking.";$("nitroBulkStatus").textContent="Stop requested for bulk generation."}catch(e){status.textContent=e.message}});
  $("nitroWebhookSave").addEventListener("click",()=>{try{const d=engine();d.getElementById("discordWebhook").value=$("nitroWebhook").value.trim();d.getElementById("savePrefs").click();$("nitroWebhookStatus").textContent=d.getElementById("prefState").textContent||"Webhook settings saved."; }catch(e){$("nitroWebhookStatus").textContent=e.message}});
  $("nitroWebhookTest").addEventListener("click",()=>{try{const d=engine();d.getElementById("discordWebhook").value=$("nitroWebhook").value.trim();d.getElementById("testWebhook").click();$("nitroWebhookStatus").textContent="Test alert requested. Check your Discord channel."; }catch(e){$("nitroWebhookStatus").textContent=e.message}});
 })();
-</script></body></html>
+</script>
+<script>
+(function(){
+ const $=id=>document.getElementById(id);
+ const token=()=>{const chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";let out="";for(let i=0;i<20;i++)out+=chars[Math.floor(Math.random()*chars.length)];return out;};
+ function checkFormat(raw){
+  try{
+   const value=raw.trim();if(!value)return {ok:false,reason:"Empty line"};
+   let u;if(/^https:\/\//i.test(value))u=new URL(value);else return {ok:false,reason:"Paste a full HTTPS Discord gift URL"};
+   const host=u.hostname.toLowerCase();
+   if(u.protocol!=="https:"||u.search||u.hash)return {ok:false,reason:"Unsupported URL format"};
+   if((host==="discord.gift"||host==="www.discord.gift")&&/^\/[A-Za-z0-9_-]{8,128}\/?$/.test(u.pathname))return {ok:true,url:"https://discord.gift/"+u.pathname.split("/").filter(Boolean)[0]};
+   if((host==="discord.com"||host==="www.discord.com")&&/^\/gifts\/[A-Za-z0-9_-]{8,128}\/?$/.test(u.pathname))return {ok:true,url:"https://discord.com/gifts/"+u.pathname.split("/").filter(Boolean)[1]};
+   return {ok:false,reason:"Not a supported Discord gift URL"};
+  }catch(e){return {ok:false,reason:"Invalid URL"};}
+ }
+ $("nitroBulkCheck").addEventListener("click",()=>{
+  const lines=$("nitroBulkLinks").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),seen=new Set(),out=[];
+  if(!lines.length){$("nitroBulkCheckStatus").textContent="Paste one or more gift links first.";return;}
+  let valid=0,duplicates=0;
+  for(const line of lines){const result=checkFormat(line);if(!result.ok){out.push("NOT SUPPORTED — "+line+" ("+result.reason+")");continue;}if(seen.has(result.url)){duplicates++;out.push("DUPLICATE — "+result.url);continue;}seen.add(result.url);valid++;out.push("FORMAT OK — "+result.url);}
+  $("nitroBulkLinks").value=out.join("\n");
+  $("nitroBulkCheckStatus").textContent=valid+" unique URL(s) with supported format; "+duplicates+" duplicate(s); "+(lines.length-valid-duplicates)+" unsupported line(s). This does not verify gift validity or redemption.";
+ });
+ $("nitroBulkClear").addEventListener("click",()=>{$("nitroBulkLinks").value="";$("nitroBulkCheckStatus").textContent="Cleared. Paste gift links to check their format.";});
+ $("nitroBulkDemoGenerate").addEventListener("click",()=>{
+  const count=Number($("nitroBulkDemoCount").value)||10,items=Array.from({length:count},()=> "https://example.invalid/discord-nitro-demo/"+token());
+  $("nitroBulkDemoOutput").value=items.join("\n");
+  $("nitroBulkDemoStatus").textContent=count+" fake demo links generated. They use a reserved nonfunctional domain and cannot redeem Nitro.";
+ });
+ $("nitroBulkDemoDownload").addEventListener("click",()=>{
+  const content=$("nitroBulkDemoOutput").value;
+  if(!content){$("nitroBulkDemoStatus").textContent="Generate a demo batch first.";return;}
+  const blob=new Blob([content+"\n"],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="fake-nitro-demo-links.txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  $("nitroBulkDemoStatus").textContent="Downloaded fake demo links. These cannot redeem Nitro.";
+ });
+})();
+</script>
+</body></html>

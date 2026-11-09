@@ -28,8 +28,8 @@ app.get("/", (req, res) => {
   res.json({
     status: "online",
     checker: "SNIPERS OG API",
-    provider: "none",
-    liveAvailabilityChecks: false,
+    provider: "snipers-og-direct",
+    liveAvailabilityChecks: true,
     webhookConfigured: Boolean(process.env.DISCORD_WEBHOOK_URL),
   });
 });

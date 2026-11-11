@@ -33,6 +33,17 @@ function parseCode(value) {
 function makeDemoCode() {
   return "TEST-ONLY-" + crypto.randomBytes(6).toString("hex").toUpperCase();
 }
+function isDiscordWebhookUrl(value) {
+  try {
+    const parsed = new URL(String(value || "").trim());
+    return parsed.protocol === "https:" &&
+      ["discord.com", "discordapp.com"].includes(parsed.hostname.toLowerCase()) &&
+      parsed.pathname.startsWith("/api/webhooks/");
+  } catch {
+    return false;
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || "";
   const url = new URL(req.url || "/", "http://localhost");
@@ -54,24 +65,34 @@ const server = http.createServer(async (req, res) => {
       service: "NITRO // HUNTER API",
       codeInspection: "FORMAT_ONLY",
       redemptionAvailability: "NOT_CHECKED",
-      realCodeGeneration: false
+      realCodeGeneration: false,
+      webhookKeyConfigured: Boolean((process.env.WEBHOOK_TEST_KEY || "").trim()),
+      webhookUrlConfigured: Boolean((process.env.DISCORD_WEBHOOK_URL || "").trim()),
+      webhookUrlValid: isDiscordWebhookUrl(process.env.DISCORD_WEBHOOK_URL || "")
     }, origin);
   }
   if (req.method === "POST" && url.pathname === "/api/webhook-test") {
     const ip = req.socket.remoteAddress || "unknown";
     if (rateLimited(ip)) return send(res, 429, { error: "Rate limit reached. Wait one minute." }, origin);
-    const expected = process.env.WEBHOOK_TEST_KEY || "";
-    const supplied = String(req.headers["x-webhook-test-key"] || "");
+    const expected = String(process.env.WEBHOOK_TEST_KEY || "").trim();
+    const supplied = String(req.headers["x-webhook-test-key"] || "").trim();
+    if (!expected) {
+      return send(res, 503, { error: "Server setup incomplete: WEBHOOK_TEST_KEY is missing in Render." }, origin);
+    }
+    if (!supplied) {
+      return send(res, 400, { error: "Enter your webhook test key in the website." }, origin);
+    }
     const a = Buffer.from(expected);
     const b = Buffer.from(supplied);
-    if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      return send(res, 401, { error: "Webhook test key is missing or incorrect." }, origin);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return send(res, 401, { error: "The entered key does not match WEBHOOK_TEST_KEY in Render. Check both values and try again." }, origin);
     }
-    const hook = process.env.DISCORD_WEBHOOK_URL || "";
-    let parsed;
-    try { parsed = new URL(hook); } catch { return send(res, 503, { error: "Webhook is not configured on the server." }, origin); }
-    if (parsed.protocol !== "https:" || !/(^|\.)discord(?:app)?\.com$/i.test(parsed.hostname) || !parsed.pathname.startsWith("/api/webhooks/")) {
-      return send(res, 503, { error: "Configured webhook URL is not an allowed Discord webhook." }, origin);
+    const hook = String(process.env.DISCORD_WEBHOOK_URL || "").trim();
+    if (!hook) {
+      return send(res, 503, { error: "Server setup incomplete: DISCORD_WEBHOOK_URL is missing in Render." }, origin);
+    }
+    if (!isDiscordWebhookUrl(hook)) {
+      return send(res, 503, { error: "DISCORD_WEBHOOK_URL must be an HTTPS Discord webhook URL ending in /api/webhooks/…" }, origin);
     }
     try {
       const response = await fetch(hook, {
@@ -80,7 +101,14 @@ const server = http.createServer(async (req, res) => {
         body: JSON.stringify({ content: "NITRO TEST" }),
         signal: AbortSignal.timeout(8000)
       });
-      if (!response.ok) return send(res, 502, { error: "Discord webhook rejected the test message.", upstreamStatus: response.status }, origin);
+      if (!response.ok) {
+        const detail = response.status === 401 || response.status === 404
+          ? "Discord rejected the webhook URL. It may have been deleted or regenerated."
+          : response.status === 429
+            ? "Discord rate-limited the webhook. Wait a moment and retry."
+            : "Discord returned an error while delivering the test.";
+        return send(res, 502, { error: detail, upstreamStatus: response.status }, origin);
+      }
       return send(res, 200, { sent: true, message: "NITRO TEST" }, origin);
     } catch {
       return send(res, 502, { error: "Could not deliver the test notification." }, origin);

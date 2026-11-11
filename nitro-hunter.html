@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07100b"><title>NITRO // HUNTER</title>
+<style>
+:root{color-scheme:dark;--bg:#07100b;--panel:#0d1b12;--line:#214a30;--green:#68ff9a;--muted:#8aa995;--amber:#ffd477;--red:#ff7180}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#17452a 0,transparent 45%),#050a07;color:#e7f8eb;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:760px;margin:auto;padding:20px 15px 35px}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:10px 2px 18px}.logo{font-size:clamp(21px,6vw,30px);font-weight:900;letter-spacing:2px;color:var(--green);text-shadow:0 0 20px #48ff8a55}.sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:5px}.live{font-size:9px;color:var(--green);border:1px solid var(--line);padding:7px 9px;border-radius:30px}
+.hero{padding:25px 3px 17px}.eyebrow{color:var(--green);font-size:10px;letter-spacing:2px}.hero h1{font-size:clamp(26px,8vw,42px);line-height:1.08;margin:9px 0}.hero p{color:var(--muted);font-size:12px;line-height:1.7;margin:0}
+.panel{background:linear-gradient(145deg,#102117,#09130d);border:1px solid var(--line);border-radius:17px;padding:17px;margin:13px 0;box-shadow:0 12px 36px #0005}.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.head h2{font-size:11px;letter-spacing:1.6px;color:var(--green);margin:0}.tag{font-size:9px;color:var(--amber);border:1px solid #69532a;padding:5px 7px;border-radius:20px}
+label{display:block;color:var(--muted);font-size:10px;letter-spacing:1px;margin:13px 0 7px}textarea,input,select{width:100%;background:#050b07;border:1px solid #285337;border-radius:11px;color:#e7f8eb;padding:13px;font:13px ui-monospace,monospace;outline:none}textarea{min-height:112px;resize:vertical}input:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px #68ff9a18}
+button{min-height:45px;border-radius:11px;padding:11px 14px;font:700 11px ui-monospace,monospace;letter-spacing:1px;cursor:pointer;touch-action:manipulation}.primary{width:100%;margin-top:12px;background:linear-gradient(135deg,#1b713c,#104a28);border:1px solid #65ff98;color:#eaffef;box-shadow:0 0 22px #4bff8a18}.secondary{background:#101d14;border:1px solid #31543a;color:#b9d8c2}.actions{display:flex;gap:9px;margin-top:10px}.actions button{flex:1}
+.note{font-size:10px;line-height:1.7;color:var(--muted);margin:12px 0 0}.terminal{background:#030704;border:1px solid #1d3c28;border-radius:11px;padding:13px;min-height:115px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.8;color:#a8cdb2}.green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#08120b;border:1px solid #1b3925;border-radius:11px;padding:12px 9px}.stat small{display:block;color:var(--muted);font-size:9px;line-height:1.4}.stat strong{display:block;color:var(--green);font-size:21px;margin-top:5px}
+.historyrow{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #1b3323;padding:10px 0;font-size:10px;overflow-wrap:anywhere}.historyrow span:last-child{color:var(--amber);text-align:right}.hidden{display:none}footer{text-align:center;color:#54745d;font-size:9px;letter-spacing:1px;padding:20px 0}
+@media(min-width:650px){main{padding:28px 24px}.columns{display:grid;grid-template-columns:1.2fr .8fr;gap:13px}.hero{padding-top:35px}}
+</style>
+</head>
+<body><main>
+<header class="top"><div><div class="logo">NITRO // HUNTER</div><div class="sub">GIFT LINK INSPECTION TERMINAL</div></div><div class="live">● DEMO MODE</div></header>
+<section class="hero"><div class="eyebrow">[ SECURE LOCAL WORKSPACE ]</div><h1>Inspect your<br>gift links.</h1><p>Paste Nitro gift links you already have. This page checks their format locally; it does not guess codes or claim that a code is redeemable.</p></section>
+<div class="columns"><section>
+<div class="panel"><div class="head"><h2>[ 01 ] INPUT QUEUE</h2><span class="tag">USER-SUPPLIED</span></div>
+<label for="codes">GIFT LINKS OR CODES · ONE PER LINE</label><textarea id="codes" placeholder="https://discord.gift/your-code&#10;or paste an existing code"></textarea>
+<button class="primary" id="check">▶ RUN FORMAT CHECK</button><div class="actions"><button class="secondary" id="clear">CLEAR</button><button class="secondary" id="copy">COPY RESULTS</button></div>
+<p class="note">Format match ≠ active, unused, or redeemable. No requests are sent to Discord.</p></div>
+<div class="panel"><div class="head"><h2>[ 02 ] TERMINAL</h2><span class="tag">LOCAL</span></div><div class="terminal" id="terminal"><span class="green">NITRO // HUNTER v1.0</span>
+Boot complete.
+Waiting for submitted links…</div></div>
+</section><aside>
+<div class="panel"><div class="head"><h2>[ SYSTEM STATUS ]</h2></div><div class="stats"><div class="stat"><small>SUBMITTED</small><strong id="total">0</strong></div><div class="stat"><small>FORMAT MATCHES</small><strong id="matches">0</strong></div><div class="stat"><small>CONFIRMED LIVE</small><strong>—</strong></div></div><p class="note">Live availability is not checked by this demo.</p></div>
+<div class="panel"><div class="head"><h2>[ 03 ] WEBHOOK ALERTS</h2><span class="tag">BACKEND NEEDED</span></div><label for="hook">DISCORD WEBHOOK URL</label><input id="hook" type="password" autocomplete="off" placeholder="Keep this in your private backend">
+<label for="notify">NOTIFICATION RULE</label><select id="notify"><option>Confirmed redeemable code only</option><option>Test notification</option></select>
+<button class="secondary" style="width:100%;margin-top:12px" id="save">SAVE UI PREFERENCE</button><p class="note" id="hooknote">This page does not store or send the webhook URL. Configure it as a server-side secret before enabling delivery.</p></div>
+<div class="panel"><div class="head"><h2>[ 04 ] HISTORY</h2><button class="secondary" id="clearHistory" style="min-height:32px;padding:6px 9px">CLEAR</button></div><div id="history" class="note">No checks yet.</div></div>
+</aside></div><footer>UNOFFICIAL COMMUNITY PROJECT · NOT AFFILIATED WITH DISCORD</footer></main>
+<script>
+const $=id=>document.getElementById(id);let rows=[];
+function getCode(s){s=s.trim();const m=s.match(/(?:discord\.gift\/|discord(?:app)?\.com\/gifts\/)?([A-Za-z0-9_-]{16,})\/?$/i);return m?m[1]:null}
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function log(s){$('terminal').textContent+='\n'+s}
+$('check').onclick=()=>{const lines=$('codes').value.split(/\n+/).map(s=>s.trim()).filter(Boolean),seen=new Set();let n=0;log('> Inspecting '+lines.length+' submitted item(s)…');for(const s of lines){const c=getCode(s);let status;if(!c)status='FORMAT UNKNOWN';else if(seen.has(c))status='DUPLICATE';else{seen.add(c);n++;status='FORMAT MATCH · UNVERIFIED'}rows.unshift({code:c||s,status});log('> '+(c?c.slice(0,10)+'…':s.slice(0,24))+' : '+status)}$('total').textContent=lines.length;$('matches').textContent=n;render();log('> Finished. No live Discord check performed.')};
+function render(){$('history').innerHTML=rows.slice(0,12).map(r=>'<div class="historyrow"><span>'+esc(r.code.slice(0,26))+'</span><span>'+esc(r.status)+'</span></div>').join('')||'No checks yet.'}
+$('clear').onclick=()=>{$('codes').value='';log('> Input cleared.')};$('clearHistory').onclick=()=>{rows=[];render()};
+$('copy').onclick=async()=>{const t=rows.slice(0,12).map(r=>r.code+' — '+r.status).join('\n');try{await navigator.clipboard.writeText(t);log('> Results copied.')}catch(e){log('> Clipboard unavailable in this browser.')}};
+$('save').onclick=()=>{$('hooknote').textContent='Preference noted for this page session. Webhook delivery is not active; keep the URL server-side and configure a private backend.';$('hook').value='';};
+</script></body></html>

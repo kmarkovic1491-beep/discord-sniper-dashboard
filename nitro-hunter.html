@@ -14,6 +14,65 @@ button{min-height:45px;border-radius:11px;padding:11px 14px;font:700 11px ui-mon
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#08120b;border:1px solid #1b3925;border-radius:11px;padding:12px 9px}.stat small{display:block;color:var(--muted);font-size:9px;line-height:1.4}.stat strong{display:block;color:var(--green);font-size:18px;margin-top:5px;overflow-wrap:anywhere}
 .row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.statusline{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #1b3323;font-size:10px}.historyrow{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #1b3323;padding:10px 0;font-size:10px;overflow-wrap:anywhere}.historyrow span:last-child{text-align:right;color:var(--amber)}footer{text-align:center;color:#54745d;font-size:9px;letter-spacing:1px;padding:20px 0}
 @media(min-width:680px){main{padding:28px 24px}.columns{display:grid;grid-template-columns:1.2fr .8fr;gap:13px}.hero{padding-top:35px}}
+
+/* iOS-inspired Liquid Glass finish */
+:root{--glass:rgba(20,35,27,.52);--glass-edge:rgba(226,255,237,.20);--glass-shine:rgba(255,255,255,.14)}
+body{
+ background:
+  radial-gradient(ellipse at 12% 8%,rgba(92,255,157,.18),transparent 34%),
+  radial-gradient(ellipse at 90% 22%,rgba(89,177,255,.13),transparent 30%),
+  radial-gradient(ellipse at 50% 100%,rgba(47,128,84,.20),transparent 42%),
+  linear-gradient(145deg,#050a08 0%,#0a1711 48%,#07100c 100%);
+ background-attachment:fixed;
+}
+.top{border-bottom-color:rgba(210,255,225,.16)}
+.live,.tag,.panel,.stat,.terminal,textarea,input,select,.secondary,.primary{
+ -webkit-backdrop-filter:blur(24px) saturate(180%);
+ backdrop-filter:blur(24px) saturate(180%);
+}
+.panel{
+ position:relative;isolation:isolate;overflow:hidden;
+ background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.025) 42%,rgba(31,91,54,.18)),rgba(11,25,17,.55);
+ border:1px solid var(--glass-edge);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.17),inset 0 -1px 0 rgba(255,255,255,.035),0 18px 48px rgba(0,0,0,.28);
+ border-radius:24px;
+}
+.panel:before{
+ content:"";position:absolute;inset:0 0 auto;height:48%;pointer-events:none;z-index:-1;
+ background:linear-gradient(180deg,rgba(255,255,255,.10),transparent);
+}
+.stat,.terminal{
+ background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.018)),rgba(4,14,9,.42);
+ border-color:rgba(225,255,235,.14);border-radius:17px;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+}
+textarea,input,select{
+ background:rgba(3,12,7,.48);border-color:rgba(210,255,224,.19);
+ border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+textarea:focus,input:focus,select:focus{
+ border-color:rgba(104,255,154,.72);box-shadow:0 0 0 4px rgba(104,255,154,.12),0 0 24px rgba(104,255,154,.10);
+}
+button{transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease}
+button:active{transform:scale(.975)}
+.primary{
+ border:1px solid rgba(190,255,211,.54);
+ background:linear-gradient(135deg,rgba(62,181,104,.72),rgba(19,99,53,.66));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 8px 26px rgba(29,168,83,.20);
+ border-radius:16px;
+}
+.secondary,.live,.tag{
+ background:rgba(255,255,255,.055);border-color:rgba(220,255,231,.20);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+ border-radius:15px;
+}
+.live{border-radius:999px}
+.logo{text-shadow:0 0 28px rgba(72,255,138,.35)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ .panel,.stat,.terminal,textarea,input,select,.secondary,.primary{background-color:#102117}
+}
+@media(prefers-reduced-motion:reduce){button{transition:none}button:active{transform:none}}
+
 </style>
 </head>
 <body><main>

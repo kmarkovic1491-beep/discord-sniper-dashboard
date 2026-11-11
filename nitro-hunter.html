@@ -73,11 +73,40 @@ button:active{transform:scale(.975)}
 }
 @media(prefers-reduced-motion:reduce){button{transition:none}button:active{transform:none}}
 
+
+/* Adjustable Liquid Glass intensity */
+:root{--liquid-blur:24px;--liquid-alpha:.105;--liquid-edge:.20;--liquid-shine:.17;--liquid-shadow:.28}
+.panel{
+ background:linear-gradient(145deg,rgba(255,255,255,var(--liquid-alpha)),rgba(255,255,255,calc(var(--liquid-alpha)*.24)) 42%,rgba(31,91,54,calc(var(--liquid-alpha)*1.7))),#0d1b12;
+ border-color:rgba(226,255,237,var(--liquid-edge));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,var(--liquid-shine)),inset 0 -1px 0 rgba(255,255,255,calc(var(--liquid-shine)*.2)),0 18px 48px rgba(0,0,0,var(--liquid-shadow));
+}
+.panel:before{background:linear-gradient(180deg,rgba(255,255,255,calc(var(--liquid-alpha)*.95)),transparent)}
+.live,.tag,.panel,.stat,.terminal,textarea,input,select,.secondary,.primary{
+ -webkit-backdrop-filter:blur(var(--liquid-blur)) saturate(calc(100% + var(--liquid-blur)*3.3));
+ backdrop-filter:blur(var(--liquid-blur)) saturate(calc(100% + var(--liquid-blur)*3.3));
+}
+.stat,.terminal{background:linear-gradient(145deg,rgba(255,255,255,calc(var(--liquid-alpha)*.72)),rgba(255,255,255,calc(var(--liquid-alpha)*.17))),#08120b;border-color:rgba(225,255,235,var(--liquid-edge))}
+textarea,input:not([type=range]),select{background:rgba(3,12,7,calc(.48 + (1 - var(--liquid-alpha))* .52));border-color:rgba(210,255,224,var(--liquid-edge))}
+.secondary,.live,.tag{background:rgba(255,255,255,calc(var(--liquid-alpha)*.52));border-color:rgba(220,255,231,var(--liquid-edge));box-shadow:inset 0 1px 0 rgba(255,255,255,var(--liquid-shine))}
+.primary{background:linear-gradient(135deg,rgba(62,181,104,calc(.25 + var(--liquid-alpha)*4.5)),rgba(19,99,53,calc(.25 + var(--liquid-alpha)*4)));border-color:rgba(190,255,211,calc(.18 + var(--liquid-edge)*.8))}
+.glass-control{margin-top:0}
+.glass-control input[type=range]{width:100%;padding:0;height:28px;background:transparent;border:0;accent-color:#68ff9a;box-shadow:none;cursor:pointer}
+.glass-control input[type=range]:focus{box-shadow:none}
+.glass-scale{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:8px;letter-spacing:.5px}
+
 </style>
 </head>
 <body><main>
 <header class="top"><div><div class="logo">NITRO // HUNTER</div><div class="sub">MULTI-PLATFORM INSPECTION TERMINAL</div></div><div class="live" id="apiPill">● API CHECKING</div></header>
 <section class="hero"><div class="eyebrow">[ DISCORD + APPLE · USER-SUPPLIED CODES ]</div><h1>Multi-platform<br>checker.</h1><p>Inspect gift-code formats and review service connectivity. A format match is not proof that a gift is active, unused, or redeemable. No guessed codes or private redemption endpoints are used.</p></section>
+<section class="panel glass-control" aria-label="Liquid Glass appearance control">
+ <div class="head"><h2>[ APPEARANCE ] LIQUID GLASS</h2><strong id="glassValue" class="green">100%</strong></div>
+ <label for="liquidGlass">LIQUID GLASS INTENSITY · 0% TO 100%</label>
+ <input id="liquidGlass" type="range" min="0" max="100" step="1" value="100" aria-label="Liquid Glass intensity">
+ <div class="glass-scale"><span>0% · CLEAR / MINIMAL</span><span>100% · FULL GLASS</span></div>
+ <p class="note">Adjusts blur, translucency, shine and glass borders across the interface. Your setting is saved on this device.</p>
+</section>
 <div class="columns"><section>
 <div class="panel"><div class="head"><h2>[ 01 ] PLATFORM CHECKER</h2><span class="tag">BULK INPUT · UP TO 50</span></div>
 <label for="platform">SELECT PLATFORM</label><select id="platform"><option value="discord">DISCORD NITRO</option><option value="apple">APPLE GIFT CARD</option></select>
@@ -108,5 +137,21 @@ $('demo').onclick=()=>{$('codes').value=$('platform').value==='discord'?'https:/
 $('clear').onclick=()=>{$('codes').value='';log('> Input cleared.')};
 $('clearHistory').onclick=()=>{rows=[];render()};
 $('testhook').onclick=async()=>{const key=$('testkey').value.trim();if(!key){$('hooknote').textContent='Enter your private test key first.';return}$('testhook').disabled=true;$('hooknote').textContent='Sending test notification…';try{const r=await fetch(API+'/api/webhook-test',{method:'POST',headers:{'x-webhook-test-key':key}});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');$('hooknote').textContent='✓ Test notification sent: NITRO TEST';log('> Discord webhook test sent.')}catch(e){$('hooknote').textContent='Test not sent: '+e.message;log('> Webhook test failed: '+e.message)}finally{$('testhook').disabled=false}};
+
+const glassSlider=$('liquidGlass'),glassValue=$('glassValue');
+function setLiquidGlass(raw,save=true){
+ const v=Math.max(0,Math.min(100,Number(raw)||0)),n=v/100,root=document.documentElement;
+ root.style.setProperty('--liquid-blur',(v*.24)+'px');
+ root.style.setProperty('--liquid-alpha',(n*.105).toFixed(3));
+ root.style.setProperty('--liquid-edge',(n*.20).toFixed(3));
+ root.style.setProperty('--liquid-shine',(n*.17).toFixed(3));
+ root.style.setProperty('--liquid-shadow',(n*.28).toFixed(3));
+ glassSlider.value=String(v);glassValue.textContent=v+'%';
+ if(save){try{localStorage.setItem('nitroHunterLiquidGlass',String(v))}catch(e){}}
+}
+let savedGlass=100;try{const stored=localStorage.getItem('nitroHunterLiquidGlass');if(stored!==null)savedGlass=Number(stored)}catch(e){}
+setLiquidGlass(savedGlass,false);
+glassSlider.addEventListener('input',e=>setLiquidGlass(e.target.value));
+
 setPlatformNote();refreshStatus();
 </script></body></html>

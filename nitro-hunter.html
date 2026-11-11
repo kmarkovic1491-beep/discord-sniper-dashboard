@@ -30,9 +30,8 @@ Boot complete.
 Waiting for submitted links…</div></div>
 </section><aside>
 <div class="panel"><div class="head"><h2>[ SYSTEM STATUS ]</h2></div><div class="stats"><div class="stat"><small>SUBMITTED</small><strong id="total">0</strong></div><div class="stat"><small>FORMAT MATCHES</small><strong id="matches">0</strong></div><div class="stat"><small>CONFIRMED LIVE</small><strong>—</strong></div></div><p class="note">Live availability is not checked by this demo.</p></div>
-<div class="panel"><div class="head"><h2>[ 03 ] WEBHOOK ALERTS</h2><span class="tag">BACKEND NEEDED</span></div><label for="hook">DISCORD WEBHOOK URL</label><input id="hook" type="password" autocomplete="off" placeholder="Keep this in your private backend">
-<label for="notify">NOTIFICATION RULE</label><select id="notify"><option>Confirmed redeemable code only</option><option>Test notification</option></select>
-<button class="secondary" style="width:100%;margin-top:12px" id="save">SAVE UI PREFERENCE</button><p class="note" id="hooknote">This page does not store or send the webhook URL. Configure it as a server-side secret before enabling delivery.</p></div>
+<div class="panel"><div class="head"><h2>[ 03 ] WEBHOOK ALERTS</h2><span class="tag">TEST MODE</span></div><label for="testkey">PRIVATE WEBHOOK TEST KEY</label><input id="testkey" type="password" autocomplete="off" placeholder="Enter the key configured in Render">
+<button class="secondary" style="width:100%;margin-top:12px" id="testhook">SEND TEST NOTIFICATION</button><p class="note" id="hooknote">Sends exactly “NITRO TEST” to your Discord webhook. The webhook URL stays in Render and is never stored in this page. Configure DISCORD_WEBHOOK_URL and WEBHOOK_TEST_KEY in Render first.</p></div>
 <div class="panel"><div class="head"><h2>[ 04 ] HISTORY</h2><button class="secondary" id="clearHistory" style="min-height:32px;padding:6px 9px">CLEAR</button></div><div id="history" class="note">No checks yet.</div></div>
 </aside></div><footer>UNOFFICIAL COMMUNITY PROJECT · NOT AFFILIATED WITH DISCORD</footer></main>
 <script>
@@ -44,5 +43,5 @@ $('check').onclick=()=>{const lines=$('codes').value.split(/\n+/).map(s=>s.trim(
 function render(){$('history').innerHTML=rows.slice(0,12).map(r=>'<div class="historyrow"><span>'+esc(r.code.slice(0,26))+'</span><span>'+esc(r.status)+'</span></div>').join('')||'No checks yet.'}
 $('clear').onclick=()=>{$('codes').value='';log('> Input cleared.')};$('clearHistory').onclick=()=>{rows=[];render()};
 $('copy').onclick=async()=>{const t=rows.slice(0,12).map(r=>r.code+' — '+r.status).join('\n');try{await navigator.clipboard.writeText(t);log('> Results copied.')}catch(e){log('> Clipboard unavailable in this browser.')}};
-$('save').onclick=()=>{$('hooknote').textContent='Preference noted for this page session. Webhook delivery is not active; keep the URL server-side and configure a private backend.';$('hook').value='';};
+$('testhook').onclick=async()=>{const key=$('testkey').value.trim();if(!key){$('hooknote').textContent='Enter your private test key first.';return;}$('testhook').disabled=true;$('hooknote').textContent='Sending test notification…';try{const r=await fetch('https://nitro-hunter-api.onrender.com/api/webhook-test',{method:'POST',headers:{'x-webhook-test-key':key}});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');$('hooknote').textContent='✓ Test notification sent: NITRO TEST';log('> Discord webhook test sent.');}catch(e){$('hooknote').textContent='Test not sent: '+e.message;log('> Webhook test failed: '+e.message);}finally{$('testhook').disabled=false;$('testkey').value='';}};
 </script></body></html>

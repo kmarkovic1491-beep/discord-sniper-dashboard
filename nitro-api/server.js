@@ -59,6 +59,20 @@ const server = http.createServer(async (req, res) => {
     });
     return res.end();
   }
+  if (req.method === "GET" && url.pathname === "/api/availability") {
+    const checks = await Promise.allSettled([
+      fetch("https://discord.com/api/v9/gateway", { signal: AbortSignal.timeout(5000), redirect: "error" }),
+      fetch("https://www.apple.com/", { signal: AbortSignal.timeout(5000), redirect: "error" })
+    ]);
+    const result = {};
+    for (const [index, name] of ["discord", "apple"].entries()) {
+      const item = checks[index];
+      result[name] = item.status === "fulfilled"
+        ? { online: item.value.status < 500, httpStatus: item.value.status }
+        : { online: false, error: "Connection failed or timed out" };
+    }
+    return send(res, 200, result, origin);
+  }
   if (req.method === "GET" && url.pathname === "/api/status") {
     return send(res, 200, {
       online: true,

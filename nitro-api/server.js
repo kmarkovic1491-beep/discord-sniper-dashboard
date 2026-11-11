@@ -70,7 +70,7 @@ const server = http.createServer(async (req, res) => {
     const hook = process.env.DISCORD_WEBHOOK_URL || "";
     let parsed;
     try { parsed = new URL(hook); } catch { return send(res, 503, { error: "Webhook is not configured on the server." }, origin); }
-    if (parsed.protocol !== "https:" || !/(^|\\.)discord(?:app)?\\.com$/i.test(parsed.hostname) || !parsed.pathname.startsWith("/api/webhooks/")) {
+    if (parsed.protocol !== "https:" || !/(^|\.)discord(?:app)?\.com$/i.test(parsed.hostname) || !parsed.pathname.startsWith("/api/webhooks/")) {
       return send(res, 503, { error: "Configured webhook URL is not an allowed Discord webhook." }, origin);
     }
     try {

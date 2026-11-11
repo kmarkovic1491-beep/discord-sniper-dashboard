@@ -94,11 +94,24 @@ const server = http.createServer(async (req, res) => {
     if (!isDiscordWebhookUrl(hook)) {
       return send(res, 503, { error: "DISCORD_WEBHOOK_URL must be an HTTPS Discord webhook URL ending in /api/webhooks/…" }, origin);
     }
+    let webhookBody = "";
     try {
+      for await (const chunk of req) {
+        webhookBody += chunk;
+        if (Buffer.byteLength(webhookBody) > 8 * 1024) {
+          return send(res, 413, { error: "Message request too large." }, origin);
+        }
+      }
+      const data = JSON.parse(webhookBody || "{}");
+      const message = String(data.message || "").trim();
+      if (!message) return send(res, 400, { error: "Type a message to send to Discord." }, origin);
+      if (message.length > 2000) {
+        return send(res, 400, { error: "Discord messages must be 2,000 characters or fewer." }, origin);
+      }
       const response = await fetch(hook, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ content: "NITRO TEST" }),
+        body: JSON.stringify({ content: message }),
         signal: AbortSignal.timeout(8000)
       });
       if (!response.ok) {
@@ -109,7 +122,7 @@ const server = http.createServer(async (req, res) => {
             : "Discord returned an error while delivering the test.";
         return send(res, 502, { error: detail, upstreamStatus: response.status }, origin);
       }
-      return send(res, 200, { sent: true, message: "NITRO TEST" }, origin);
+      return send(res, 200, { sent: true, message }, origin);
     } catch {
       return send(res, 502, { error: "Could not deliver the test notification." }, origin);
     }

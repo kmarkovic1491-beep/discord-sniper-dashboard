@@ -42,7 +42,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204, {
       "access-control-allow-origin": ALLOWED_ORIGIN,
       "access-control-allow-methods": "GET,POST,OPTIONS",
-      "access-control-allow-headers": "content-type",
+      "access-control-allow-headers": "content-type,x-webhook-test-key",
       "access-control-max-age": "600",
       "vary": "Origin"
     });
@@ -56,6 +56,35 @@ const server = http.createServer(async (req, res) => {
       redemptionAvailability: "NOT_CHECKED",
       realCodeGeneration: false
     }, origin);
+  }
+  if (req.method === "POST" && url.pathname === "/api/webhook-test") {
+    const ip = req.socket.remoteAddress || "unknown";
+    if (rateLimited(ip)) return send(res, 429, { error: "Rate limit reached. Wait one minute." }, origin);
+    const expected = process.env.WEBHOOK_TEST_KEY || "";
+    const supplied = String(req.headers["x-webhook-test-key"] || "");
+    const a = Buffer.from(expected);
+    const b = Buffer.from(supplied);
+    if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return send(res, 401, { error: "Webhook test key is missing or incorrect." }, origin);
+    }
+    const hook = process.env.DISCORD_WEBHOOK_URL || "";
+    let parsed;
+    try { parsed = new URL(hook); } catch { return send(res, 503, { error: "Webhook is not configured on the server." }, origin); }
+    if (parsed.protocol !== "https:" || !/(^|\\.)discord(?:app)?\\.com$/i.test(parsed.hostname) || !parsed.pathname.startsWith("/api/webhooks/")) {
+      return send(res, 503, { error: "Configured webhook URL is not an allowed Discord webhook." }, origin);
+    }
+    try {
+      const response = await fetch(hook, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: "NITRO TEST" }),
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!response.ok) return send(res, 502, { error: "Discord webhook rejected the test message.", upstreamStatus: response.status }, origin);
+      return send(res, 200, { sent: true, message: "NITRO TEST" }, origin);
+    } catch {
+      return send(res, 502, { error: "Could not deliver the test notification." }, origin);
+    }
   }
   if (req.method !== "POST" || !["/api/inspect", "/api/demo-generate"].includes(url.pathname)) {
     return send(res, 404, { error: "Not found" }, origin);

@@ -74,26 +74,6 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/api/webhook-test") {
     const ip = req.socket.remoteAddress || "unknown";
     if (rateLimited(ip)) return send(res, 429, { error: "Rate limit reached. Wait one minute." }, origin);
-    const expected = String(process.env.WEBHOOK_TEST_KEY || "").trim();
-    const supplied = String(req.headers["x-webhook-test-key"] || "").trim();
-    if (!expected) {
-      return send(res, 503, { error: "Server setup incomplete: WEBHOOK_TEST_KEY is missing in Render." }, origin);
-    }
-    if (!supplied) {
-      return send(res, 400, { error: "Enter your webhook test key in the website." }, origin);
-    }
-    const a = Buffer.from(expected);
-    const b = Buffer.from(supplied);
-    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      return send(res, 401, { error: "The entered key does not match WEBHOOK_TEST_KEY in Render. Check both values and try again." }, origin);
-    }
-    const hook = String(process.env.DISCORD_WEBHOOK_URL || "").trim();
-    if (!hook) {
-      return send(res, 503, { error: "Server setup incomplete: DISCORD_WEBHOOK_URL is missing in Render." }, origin);
-    }
-    if (!isDiscordWebhookUrl(hook)) {
-      return send(res, 503, { error: "DISCORD_WEBHOOK_URL must be an HTTPS Discord webhook URL ending in /api/webhooks/…" }, origin);
-    }
     let webhookBody = "";
     try {
       for await (const chunk of req) {
@@ -104,12 +84,18 @@ const server = http.createServer(async (req, res) => {
       }
       const data = JSON.parse(webhookBody || "{}");
       const message = String(data.message || "").trim();
+      const hook = String(data.webhookUrl || "").trim();
+      if (!hook) return send(res, 400, { error: "Paste your Discord webhook URL." }, origin);
+      if (!isDiscordWebhookUrl(hook)) {
+        return send(res, 400, { error: "Enter a valid HTTPS Discord webhook URL." }, origin);
+      }
       if (!message) return send(res, 400, { error: "Type a message to send to Discord." }, origin);
       if (message.length > 2000) {
         return send(res, 400, { error: "Discord messages must be 2,000 characters or fewer." }, origin);
       }
       const response = await fetch(hook, {
         method: "POST",
+        redirect: "error",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ content: message }),
         signal: AbortSignal.timeout(8000)
@@ -122,9 +108,9 @@ const server = http.createServer(async (req, res) => {
             : "Discord returned an error while delivering the test.";
         return send(res, 502, { error: detail, upstreamStatus: response.status }, origin);
       }
-      return send(res, 200, { sent: true, message }, origin);
+      return send(res, 200, { sent: true }, origin);
     } catch {
-      return send(res, 502, { error: "Could not deliver the test notification." }, origin);
+      return send(res, 502, { error: "Could not deliver the test notification. Check the URL and try again." }, origin);
     }
   }
   if (req.method !== "POST" || !["/api/inspect", "/api/demo-generate"].includes(url.pathname)) {
